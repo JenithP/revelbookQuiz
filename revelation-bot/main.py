@@ -237,7 +237,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{profile.get('name','')}님 안녕하세요! 👋\n"
             f"{sub}\n\n"
             f"📖 오늘도 말씀 암기 훈련 하러 가볼까요?\n"
-            f"💡 구절 보기: /계1장 /계7장 /계10장 /계20장 /계22장\n"
+            f"💡 구절 보기: /rev1 /rev7 /rev10 /rev20 /rev22\n"
             f"💡 내 점수: /score\n"
             f"💡 정보 변경: /register",
             reply_markup=webapp_button(user.id, "🚀 훈련 시작하기"),
@@ -268,11 +268,11 @@ async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📖 *요한계시록 암기 훈련 봇*\n\n"
-        "/계1장 — 계 1장 1~3절 보기\n"
-        "/계7장 — 계 7장 1~4절 보기\n"
-        "/계10장 — 계 10장 10~11절 보기\n"
-        "/계20장 — 계 20장 4~6절 보기\n"
-        "/계22장 — 계 22장 18~19절 보기\n"
+        "/rev1 — 계 1장 1~3절 보기\n"
+        "/rev7 — 계 7장 1~4절 보기\n"
+        "/rev10 — 계 10장 10~11절 보기\n"
+        "/rev20 — 계 20장 4~6절 보기\n"
+        "/rev22 — 계 22장 18~19절 보기\n"
         "/score — 내 진도 및 순위 확인\n"
         "/rank — 전체 순위 TOP 10\n"
         "/register — 소속 정보 변경\n"
@@ -821,11 +821,11 @@ def main():
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("score", cmd_score))
     app.add_handler(CommandHandler("rank", cmd_rank))
-    app.add_handler(CommandHandler("계1장", cmd_rev1))
-    app.add_handler(CommandHandler("계7장", cmd_rev7))
-    app.add_handler(CommandHandler("계10장", cmd_rev10))
-    app.add_handler(CommandHandler("계20장", cmd_rev20))
-    app.add_handler(CommandHandler("계22장", cmd_rev22))
+    app.add_handler(CommandHandler("rev1", cmd_rev1))
+    app.add_handler(CommandHandler("rev7", cmd_rev7))
+    app.add_handler(CommandHandler("rev10", cmd_rev10))
+    app.add_handler(CommandHandler("rev20", cmd_rev20))
+    app.add_handler(CommandHandler("rev22", cmd_rev22))
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     app.add_handler(CallbackQueryHandler(handle_callback))
