@@ -807,6 +807,9 @@ def cleanup_telegram():
 
 # ─────────────── 메인 ───────────────
 def main():
+    port = int(os.environ.get("PORT", 10000))
+    print(f"포트 {port}에서 시작합니다")
+
     cleanup_telegram()
     threading.Thread(target=start_dummy_server, daemon=True).start()
 
