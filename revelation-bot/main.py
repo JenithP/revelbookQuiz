@@ -238,7 +238,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{sub}\n\n"
             f"📖 오늘도 말씀 암기 훈련 하러 가볼까요?\n"
             f"💡 구절 보기: /계1장 /계7장 /계10장 /계20장 /계22장\n"
-            f"💡 내 점수: /점수\n"
+            f"💡 내 점수: /score\n"
             f"💡 정보 변경: /register",
             reply_markup=webapp_button(user.id, "🚀 훈련 시작하기"),
         )
@@ -273,8 +273,8 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/계10장 — 계 10장 10~11절 보기\n"
         "/계20장 — 계 20장 4~6절 보기\n"
         "/계22장 — 계 22장 18~19절 보기\n"
-        "/점수 — 내 진도 및 순위 확인\n"
-        "/순위 — 전체 순위 TOP 10\n"
+        "/score — 내 진도 및 순위 확인\n"
+        "/rank — 전체 순위 TOP 10\n"
         "/register — 소속 정보 변경\n"
         "/cancel — 진행 중인 작업 취소",
         parse_mode="Markdown",
@@ -819,8 +819,8 @@ def main():
     app.add_handler(CommandHandler("register", cmd_register))
     app.add_handler(CommandHandler("cancel", cmd_cancel))
     app.add_handler(CommandHandler("help", cmd_help))
-    app.add_handler(CommandHandler("점수", cmd_score))
-    app.add_handler(CommandHandler("순위", cmd_rank))
+    app.add_handler(CommandHandler("score", cmd_score))
+    app.add_handler(CommandHandler("rank", cmd_rank))
     app.add_handler(CommandHandler("계1장", cmd_rev1))
     app.add_handler(CommandHandler("계7장", cmd_rev7))
     app.add_handler(CommandHandler("계10장", cmd_rev10))
