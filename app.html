@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>말씀 암기 훈련</title>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#c9a84c;--gold-light:#e8cc80;
+  --deep:#0d0a1a;--deep2:#130f24;--deep3:#1c1535;
+  --purple:#4a3b8c;--purple-light:#7b6abf;--purple-bright:#9d8fe0;
+  --teal:#2a8c7a;--teal-light:#4dbda8;
+  --amber:#c97d2a;--amber-light:#e8a84c;
+  --text:#f0ece0;--text-dim:#9e96b8;--text-muted:#5a5275;
+  --card-bg:#13102a;--card-border:rgba(255,255,255,.07);
+  --success:#4dbda8;--error:#e07070;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Pretendard',sans-serif;
+  background:var(--deep);color:var(--text);
+  display:flex;flex-direction:column;
+  max-width:420px;margin:0 auto;
+  height:100vh;position:relative;
+}
+
+/* 헤더 */
+.header{
+  background:var(--deep2);border-bottom:1px solid var(--card-border);
+  padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.header-back{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--card-border);border-radius:8px;
+  color:var(--text-dim);font-size:16px;cursor:pointer;text-decoration:none;flex-shrink:0;
+}
+.header-info{flex:1;min-width:0}
+.header-chapter{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-stage{font-size:11px;color:var(--text-dim);margin-top:1px}
+.stage-dots{display:flex;gap:3px;flex-shrink:0}
+.dot{width:18px;height:5px;border-radius:3px;background:var(--deep3);transition:.3s}
+.dot.done{background:var(--teal)}
+.dot.active{background:var(--purple-bright)}
+
+/* 통계 바 */
+.stat-bar{
+  display:flex;gap:6px;padding:8px 16px;
+  background:var(--deep2);border-bottom:1px solid var(--card-border);flex-shrink:0;
+}
+.stat-item{
+  flex:1;background:var(--card-bg);border-radius:8px;padding:5px;text-align:center;
+}
+.stat-num{font-size:15px;font-weight:600;color:var(--text)}
+.stat-label{font-size:10px;color:var(--text-muted);margin-top:1px}
+
+/* 구절 탭 */
+.verse-tabs{
+  display:flex;overflow-x:auto;
+  background:var(--deep2);border-bottom:1px solid var(--card-border);flex-shrink:0;
+  scrollbar-width:none;
+}
+.verse-tabs::-webkit-scrollbar{display:none}
+.vtab{
+  flex-shrink:0;padding:7px 12px;font-size:12px;font-weight:500;
+  color:var(--text-muted);border:none;background:none;cursor:pointer;
+  border-bottom:2px solid transparent;transition:.2s;white-space:nowrap;
+}
+.vtab.active{color:var(--purple-bright);border-bottom-color:var(--purple-bright)}
+.vtab.mastered{color:var(--teal)}
+
+/* 스테이지 탭 */
+.stage-tabs{
+  display:flex;overflow-x:auto;gap:0;
+  padding:8px 12px;background:var(--deep2);
+  border-bottom:1px solid var(--card-border);flex-shrink:0;
+  scrollbar-width:none;
+}
+.stage-tabs::-webkit-scrollbar{display:none}
+.stab{
+  flex-shrink:0;padding:5px 10px;border-radius:20px;font-size:12px;
+  border:1px solid var(--card-border);background:none;
+  color:var(--text-muted);cursor:pointer;transition:.2s;white-space:nowrap;margin-right:4px;
+}
+.stab.active{background:var(--purple);border-color:var(--purple);color:#fff}
+.stab.done{border-color:var(--teal);color:var(--teal)}
+.stab.locked{opacity:.3;cursor:not-allowed}
+
+/* 스크롤 영역 */
+.scroll-area{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--deep3) transparent;}
+.scroll-area::-webkit-scrollbar{width:3px}
+.scroll-area::-webkit-scrollbar-thumb{background:var(--deep3);border-radius:2px}
+
+/* 공통 카드 */
+.card{
+  background:var(--card-bg);border:1px solid var(--card-border);
+  border-radius:14px;padding:14px;margin:12px 14px 0;
+}
+.card-label{font-size:11px;color:var(--text-muted);margin-bottom:8px;letter-spacing:.3px}
+
+/* 이모지 영역 */
+.emoji-row{
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+  padding:14px;
+}
+.emoji-item{text-align:center;transition:.3s}
+.emoji-icon{
+  width:52px;height:52px;border-radius:12px;font-size:26px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  transition:.3s;
+}
+.emoji-item.active .emoji-icon{
+  background:rgba(127,107,200,.25);border-color:var(--purple-bright);
+}
+.emoji-item.dim .emoji-icon{opacity:.2}
+.emoji-item.correct .emoji-icon{
+  background:rgba(45,140,120,.2);border-color:var(--teal);
+}
+.emoji-label{font-size:9px;color:var(--text-muted);margin-top:4px;transition:.3s}
+.emoji-item.active .emoji-label{color:var(--purple-bright)}
+.emoji-item.correct .emoji-label{color:var(--teal-light)}
+
+@keyframes blink{0%,100%{opacity:1;border-color:var(--purple-bright)}50%{opacity:.4;border-color:transparent}}
+.emoji-item.blinking .emoji-icon{animation:blink 1s ease-in-out infinite}
+
+/* 구절 텍스트 표시 */
+.verse-line{margin-bottom:10px;font-size:14px;line-height:2}
+.vnum{
+  display:inline-block;font-size:10px;color:var(--text-muted);
+  background:var(--deep3);border-radius:4px;padding:1px 5px;margin-right:5px;
+  vertical-align:middle;
+}
+.chunk-highlight{color:var(--gold-light);font-weight:600}
+.chunk-dim{color:var(--text-muted)}
+
+/* 빈칸 — 글자수만큼 너비 */
+.blank-input{
+  display:inline-block;vertical-align:middle;
+  background:rgba(74,59,140,.15);
+  border:none;border-bottom:1.5px solid var(--purple-bright);
+  color:var(--text);font-size:14px;font-family:'Pretendard',sans-serif;
+  outline:none;padding:0 2px;margin:0 2px;
+  border-radius:0;transition:.3s;
+  min-width:20px;
+}
+.blank-input:focus{background:rgba(74,59,140,.25);border-bottom-color:var(--gold)}
+.blank-input.correct{border-bottom-color:var(--teal);color:var(--teal-light);background:rgba(45,140,120,.1)}
+.blank-input.wrong{border-bottom-color:var(--error);color:var(--error);animation:shake .3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+/* 청크 빈칸 (3단계) */
+.chunk-blank-input{
+  width:100%;background:var(--deep3);
+  border:1px solid var(--purple-bright);border-radius:8px;
+  color:var(--text);font-size:14px;font-family:'Pretendard',sans-serif;
+  outline:none;padding:8px 10px;margin-top:6px;line-height:1.7;
+  min-height:36px;
+}
+.chunk-blank-input:focus{border-color:var(--gold);background:rgba(74,59,140,.1)}
+.chunk-blank-input.correct{border-color:var(--teal);background:rgba(45,140,120,.08);color:var(--teal-light)}
+.chunk-blank-input.wrong{border-color:var(--error);animation:shake .3s ease}
+
+/* 절 타이핑 (4단계) */
+.verse-block{margin-bottom:14px}
+.verse-block-label{
+  font-size:12px;font-weight:600;color:var(--text-dim);
+  margin-bottom:6px;display:flex;align-items:center;gap:6px;
+}
+.verse-block-emojis{display:flex;gap:4px;flex-wrap:wrap}
+.mini-emoji{
+  width:26px;height:26px;font-size:14px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  transition:.3s;
+}
+.mini-emoji.blinking{animation:blink 1s ease-in-out infinite}
+.mini-emoji.correct{background:rgba(45,140,120,.15);border-color:var(--teal);animation:none}
+
+.verse-textarea{
+  width:100%;background:var(--deep3);
+  border:1px solid var(--card-border);border-radius:10px;
+  color:var(--text);font-size:14px;font-family:'Pretendard',sans-serif;
+  outline:none;padding:10px 12px;line-height:1.8;resize:none;
+  min-height:60px;max-height:120px;overflow-y:auto;
+}
+.verse-textarea:focus{border-color:var(--purple-bright)}
+.verse-textarea.correct{border-color:var(--teal);background:rgba(45,140,120,.05);color:var(--teal-light)}
+.verse-textarea.wrong{border-color:var(--error);animation:shake .3s ease}
+.verse-answer-show{
+  font-size:13px;line-height:1.8;color:var(--text-dim);
+  background:rgba(0,0,0,.2);border-radius:8px;padding:8px 10px;margin-top:6px;
+  display:none;
+}
+
+/* 5단계 전체 타이핑 */
+.full-verse-block{margin-bottom:10px}
+.full-vnum{font-size:12px;font-weight:600;color:var(--gold);margin-bottom:4px}
+.full-verse-text{
+  font-size:13px;color:var(--text-dim);line-height:1.8;
+  background:rgba(0,0,0,.2);border-radius:8px;padding:8px 10px;
+  margin-bottom:6px;
+}
+.full-input{
+  width:100%;background:var(--deep3);
+  border:1px solid var(--card-border);border-radius:10px;
+  color:var(--text);font-size:14px;font-family:'Pretendard',sans-serif;
+  outline:none;padding:10px 12px;line-height:1.8;resize:none;
+  min-height:50px;
+}
+.full-input:focus{border-color:var(--purple-bright)}
+.full-input.correct{border-color:var(--teal);background:rgba(45,140,120,.05);color:var(--teal-light)}
+.full-input.wrong{border-color:var(--error);animation:shake .3s ease}
+
+/* 피드백 */
+.feedback{
+  border-radius:10px;padding:10px 12px;margin:10px 14px 0;
+  font-size:13px;line-height:1.6;display:none;
+}
+.feedback.correct{background:rgba(45,140,120,.15);border:1px solid rgba(45,140,120,.3);color:var(--teal-light)}
+.feedback.partial{background:rgba(200,125,42,.15);border:1px solid rgba(200,125,42,.3);color:var(--amber-light)}
+.feedback.wrong{background:rgba(200,100,100,.12);border:1px solid rgba(200,100,100,.25);color:var(--error)}
+
+/* 진행 표시 */
+.progress-info{
+  text-align:center;font-size:12px;color:var(--text-muted);
+  padding:8px;
+}
+.progress-dots{display:flex;gap:4px;justify-content:center;margin-top:4px}
+.pdot{width:7px;height:7px;border-radius:50%;background:var(--deep3);transition:.3s}
+.pdot.done{background:var(--teal)}
+.pdot.current{background:var(--purple-bright)}
+
+/* TTS 바 */
+.tts-bar{
+  background:var(--deep2);border-top:1px solid var(--card-border);
+  padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.tts-play{
+  width:36px;height:36px;border-radius:50%;background:var(--purple);border:none;
+  color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.tts-track{flex:1;height:3px;background:var(--deep3);border-radius:2px;cursor:pointer}
+.tts-fill{height:100%;background:var(--purple-bright);border-radius:2px;width:0%;transition:.1s}
+.tts-speed{
+  background:var(--deep3);border:none;color:var(--text-dim);
+  font-size:11px;border-radius:6px;padding:3px 6px;cursor:pointer;
+}
+
+/* 하단 버튼 */
+.bottom-nav{
+  background:var(--deep2);border-top:1px solid var(--card-border);
+  padding:10px 14px;display:flex;gap:8px;flex-shrink:0;
+}
+.btn-prev{
+  flex:0 0 70px;padding:11px;border-radius:10px;
+  border:1px solid var(--card-border);background:none;
+  color:var(--text-dim);font-size:13px;cursor:pointer;
+}
+.btn-main{
+  flex:1;padding:11px;border-radius:10px;
+  background:var(--purple);border:none;
+  color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;
+  font-family:'Pretendard',sans-serif;
+}
+.btn-main:hover{background:var(--purple-light)}
+.btn-main.gold{background:linear-gradient(135deg,var(--gold),#a07830);color:#1a1200}
+.btn-main:disabled{opacity:.4;cursor:not-allowed}
+
+/* 완료 */
+.complete-screen{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:40px 24px;text-align:center;
+}
+.complete-icon{font-size:52px;margin-bottom:16px}
+.complete-title{font-family:'Nanum Myeongjo',serif;font-size:22px;color:var(--gold-light);margin-bottom:8px}
+
+/* 1단계 씬 */
+.scene-bg{
+  background:linear-gradient(180deg,#0d1b3e 0%,#1a1040 100%);
+  border-radius:14px;padding:20px 14px;margin:12px 14px 0;
+  display:flex;flex-direction:column;align-items:center;
+  position:relative;overflow:hidden;min-height:160px;justify-content:center;
+}
+.scene-glow{
+  position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:200px;height:80px;
+  background:radial-gradient(ellipse,rgba(74,59,140,.4) 0%,transparent 70%);
+}
+.scene-chunk{
+  position:relative;z-index:1;
+  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:12px 16px;text-align:center;
+  font-size:15px;line-height:1.8;color:var(--text);margin-top:14px;
+  max-width:340px;width:100%;
+}
+.scene-note{font-size:11px;color:var(--text-muted);margin-top:6px}
+
+/* 스페이서 */
+.spacer{height:14px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html" class="header-back">‹</a>
+  <div class="header-info">
+    <div class="header-chapter" id="hd-chapter">계 1장 1~3절</div>
+    <div class="header-stage" id="hd-stage">① 연상 학습</div>
+  </div>
+  <div class="stage-dots" id="stage-dots">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+</div>
+
+<div class="stat-bar">
+  <div class="stat-item"><div class="stat-num" id="s-streak">0</div><div class="stat-label">연속정답</div></div>
+  <div class="stat-item"><div class="stat-num" id="s-mastered">0</div><div class="stat-label">완전암기</div></div>
+  <div class="stat-item"><div class="stat-num" id="s-correct">0</div><div class="stat-label">이번정답</div></div>
+  <div class="stat-item"><div class="stat-num" id="s-stage">1/5</div><div class="stat-label">단계</div></div>
+</div>
+
+<div class="verse-tabs" id="verse-tabs"></div>
+<div class="stage-tabs" id="stage-tabs"></div>
+
+<div class="scroll-area" id="scroll-area"></div>
+<div class="feedback" id="feedback"></div>
+
+<div class="tts-bar" id="tts-bar" style="display:none">
+  <button class="tts-play" id="tts-btn" onclick="toggleTTS()">▶</button>
+  <div class="tts-track"><div class="tts-fill" id="tts-fill"></div></div>
+  <select class="tts-speed" id="tts-speed" onchange="changeTTSSpeed()">
+    <option value="0.7">0.7x</option>
+    <option value="1" selected>1x</option>
+    <option value="1.3">1.3x</option>
+  </select>
+</div>
+
+<div class="bottom-nav" id="bottom-nav">
+  <button class="btn-prev" id="btn-prev" onclick="onPrev()">◀</button>
+  <button class="btn-main" id="btn-main" onclick="onMain()">확인</button>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCQrXxJaiSPF7_Da569LbeJIXBtOMg5UHU",
+  authDomain: "revel-quiz.firebaseapp.com",
+  projectId: "revel-quiz",
+  storageBucket: "revel-quiz.firebasestorage.app",
+  messagingSenderId: "984978228798",
+  appId: "1:984978228798:web:9d16a9ea1928c8ff7b736f"
+};
+const app = initializeApp(FIREBASE_CONFIG);
+const db = getFirestore(app);
+
+/* ═══════════════════════════════════════
+   구절 데이터
+═══════════════════════════════════════ */
+const VERSES = [
+  {
+    id:'rev1', shortLabel:'계1', title:'계 1장 1~3절',
+    chars:[
+      {icon:'✝',name:'예수님'},
+      {icon:'📜',name:'계시'},
+      {icon:'☁️',name:'하나님'},
+      {icon:'👼',name:'천사'},
+      {icon:'✍️',name:'요한'}
+    ],
+    chunks:[
+      {verseNum:'1절', text:'예수 그리스도의 계시라', chars:[0,1]},
+      {text:'이는 하나님이 그에게 주사', chars:[2,0]},
+      {text:'반드시 속히 될 일을 그 종들에게 보이시려고', chars:[2]},
+      {text:'그 천사를 그 종 요한에게 보내어', chars:[3,4]},
+      {text:'지시하신 것이라', chars:[3]},
+      {verseNum:'2절', text:'요한은 하나님의 말씀과 예수 그리스도의 증거', chars:[4,2,0]},
+      {text:'곧 자기의 본 것을 다 증거하였느니라', chars:[4]},
+      {verseNum:'3절', text:'이 예언의 말씀을 읽는 자와 듣는 자들과', chars:[1]},
+      {text:'그 가운데 기록한 것을 지키는 자들이 복이 있나니', chars:[1]},
+      {text:'때가 가까움이라', chars:[2]}
+    ]
+  },
+  {
+    id:'rev7', shortLabel:'계7', title:'계 7장 1~4절',
+    chars:[
+      {icon:'👼',name:'네천사'},
+      {icon:'🌬️',name:'바람'},
+      {icon:'🕊️',name:'다른천사'},
+      {icon:'🔏',name:'하나님인'},
+      {icon:'✡️',name:'이스라엘'}
+    ],
+    chunks:[
+      {verseNum:'1절', text:'이 일 후에 내가 네 천사가 땅 네 모퉁이에 선 것을 보니', chars:[0]},
+      {text:'땅의 사방의 바람을 붙잡아', chars:[0,1]},
+      {text:'바람으로 하여금 땅에나 바다에나 각종 나무에 불지 못하게 하더라', chars:[1]},
+      {verseNum:'2절', text:'또 보매 다른 천사가 살아 계신 하나님의 인을 가지고', chars:[2,3]},
+      {text:'해 돋는 데로부터 올라와서', chars:[2]},
+      {text:'땅과 바다를 해롭게 할 권세를 얻은 네 천사를 향하여 큰 소리로 외쳐', chars:[0,2]},
+      {verseNum:'3절', text:'가로되 우리가 우리 하나님의 종들의 이마에 인치기까지', chars:[3]},
+      {text:'땅이나 바다나 나무나 해하지 말라 하더라', chars:[0]},
+      {verseNum:'4절', text:'내가 인 맞은 자의 수를 들으니', chars:[4]},
+      {text:'이스라엘 자손의 각 지파 중에서 인 맞은 자들이 십사만 사천이니', chars:[4]}
+    ]
+  },
+  {
+    id:'rev10', shortLabel:'계10', title:'계 10장 10~11절',
+    chars:[
+      {icon:'👼',name:'천사'},
+      {icon:'📖',name:'작은책'},
+      {icon:'✍️',name:'요한'},
+      {icon:'🌍',name:'열방'}
+    ],
+    chunks:[
+      {verseNum:'10절', text:'내가 천사의 손에서 작은 책을 갖다 먹어버리니', chars:[0,1,2]},
+      {text:'내 입에는 꿀같이 다나', chars:[2,1]},
+      {text:'먹은 후에 내 배에서는 쓰게 되더라', chars:[2,1]},
+      {verseNum:'11절', text:'저가 내게 말하기를', chars:[0,2]},
+      {text:'네가 많은 백성과 나라와 방언과 임금에게', chars:[3]},
+      {text:'다시 예언하여야 하리라 하더라', chars:[2,0]}
+    ]
+  },
+  {
+    id:'rev20', shortLabel:'계20', title:'계 20장 4~6절',
+    chars:[
+      {icon:'🏛️',name:'보좌'},
+      {icon:'👑',name:'심판자'},
+      {icon:'🩸',name:'순교자'},
+      {icon:'✝️',name:'그리스도'}
+    ],
+    chunks:[
+      {verseNum:'4절', text:'또 내가 보좌들을 보니 거기 앉은 자들이 있어', chars:[0,1]},
+      {text:'심판하는 권세를 받았더라', chars:[1]},
+      {text:'또 내가 보니 예수의 증거와 하나님의 말씀을 인하여', chars:[3]},
+      {text:'목 베임을 받은 자의 영혼들과', chars:[2]},
+      {text:'또 짐승과 그의 우상에게 경배하지도 아니하고', chars:[2]},
+      {text:'이마와 손에 그의 표를 받지도 아니한 자들이', chars:[2]},
+      {text:'살아서 그리스도로 더불어 천 년 동안 왕 노릇 하니', chars:[3]},
+      {verseNum:'5절', text:'(그 나머지 죽은 자들은 그 천 년이 차기까지 살지 못하더라) 이는 첫째 부활이라', chars:[3]},
+      {verseNum:'6절', text:'이 첫째 부활에 참예하는 자들은 복이 있고 거룩하도다', chars:[3]},
+      {text:'둘째 사망이 그들을 다스리는 권세가 없고', chars:[3]},
+      {text:'도리어 그들이 하나님과 그리스도의 제사장이 되어', chars:[3,0]},
+      {text:'천 년 동안 그리스도로 더불어 왕 노릇 하리라', chars:[3]}
+    ]
+  },
+  {
+    id:'rev22', shortLabel:'계22', title:'계 22장 18~19절',
+    chars:[
+      {icon:'📜',name:'예언책'},
+      {icon:'⚡',name:'재앙'},
+      {icon:'🌳',name:'생명나무'},
+      {icon:'🏙️',name:'거룩한성'}
+    ],
+    chunks:[
+      {verseNum:'18절', text:'내가 이 책의 예언의 말씀을 듣는 각인에게 증거하노니', chars:[0]},
+      {text:'만일 누구든지 이것들 외에 더하면', chars:[0]},
+      {text:'하나님이 이 책에 기록된 재앙들을 그에게 더하실 터이요', chars:[1]},
+      {verseNum:'19절', text:'만일 누구든지 이 책의 예언의 말씀에서 제하여 버리면', chars:[0]},
+      {text:'하나님이 이 책에 기록된 생명나무와 및 거룩한 성에 참예함을', chars:[2,3]},
+      {text:'제하여 버리시리라', chars:[0]}
+    ]
+  }
+];
+
+/* 절 단위 그룹핑 */
+function getVerseGroups(v) {
+  const groups = [];
+  let cur = null;
+  v.chunks.forEach(ch => {
+    if (ch.verseNum) { cur = {verseNum:ch.verseNum, chunks:[]}; groups.push(cur); }
+    if (cur) cur.chunks.push(ch);
+  });
+  return groups;
+}
+
+/* ═══════════════════════════════════════
+   앱 상태
+═══════════════════════════════════════ */
+let S = {
+  verseIdx: 0,
+  stageIdx: 0,
+  // 1단계
+  chunkIdx: 0,
+  ttsUtter: null, ttsPlaying: false,
+  // 2단계
+  s2_queue: [],       // 남은 청크 인덱스 (셔플)
+  s2_correct: 0,      // 맞춘 횟수
+  s2_target: 0,       // 완료 기준 (5회)
+  s2_curChunkIdx: -1,
+  s2_blankWordIdx: -1,
+  // 3단계
+  s3_queue: [],
+  s3_correct: 0,
+  s3_target: 0,
+  s3_curChunkIdx: -1,
+  // 4단계
+  s4_verseGroups: [],
+  s4_groupIdx: 0,
+  s4_done: new Set(),
+  // 5단계
+  s5_done: new Set(),
+  // 공통
+  streak: 0,
+  stageCorrect: 0,
+  mastered: new Set(),
+  stageUnlocked: [true, true, false, false, false],
+  scores: {},
+  user: null
+};
+
+/* 사용자 */
+const saved = localStorage.getItem('revel_user');
+if (!saved) { location.href='index.html'; }
+S.user = JSON.parse(saved);
+
+/* Firebase 점수 로드 */
+async function loadScores() {
+  if (S.user.isGuest) { renderAll(); return; }
+  try {
+    const snap = await getDoc(doc(db,'scores',S.user.uid));
+    if (snap.exists()) {
+      S.scores = snap.data();
+      Object.keys(S.scores).forEach(k => { if (S.scores[k]?.mastered) S.mastered.add(k); });
+    }
+  } catch(e){}
+  renderAll();
+}
+loadScores();
+
+async function saveScore(verseId, data) {
+  if (!S.user || S.user.isGuest) return;
+  try {
+    S.scores[verseId] = {...(S.scores[verseId]||{}), ...data};
+    await setDoc(doc(db,'scores',S.user.uid), {[verseId]: {...S.scores[verseId], updatedAt:serverTimestamp()}}, {merge:true});
+    if (data.mastered) {
+      await setDoc(doc(db,'leaderboard',S.user.uid), {
+        name:S.user.name, group:S.user.group,
+        totalMastered: S.mastered.size,
+        updatedAt: serverTimestamp()
+      }, {merge:true});
+    }
+  } catch(e){}
+}
+
+/* ═══════════════════════════════════════
+   유틸
+═══════════════════════════════════════ */
+function shuffle(arr) {
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+// 글자수 기반 input 너비 계산 (한글 1글자 ≈ 1em)
+function charWidth(word) {
+  return Math.max(word.length, 2) + 'em';
+}
+function normalize(s) { return s.trim().replace(/\s+/g,' '); }
+
+/* ═══════════════════════════════════════
+   공통 UI 렌더
+═══════════════════════════════════════ */
+function renderAll() {
+  renderVerseTabs();
+  renderStageTabs();
+  updateHeader();
+  updateStats();
+  renderStage();
+}
+
+function renderVerseTabs() {
+  document.getElementById('verse-tabs').innerHTML = VERSES.map((v,i) =>
+    `<button class="vtab${i===S.verseIdx?' active':''}${S.mastered.has(v.id)?' mastered':''}"
+      onclick="selectVerse(${i})">${v.shortLabel}</button>`
+  ).join('');
+}
+
+function renderStageTabs() {
+  const labels = ['①연상','②단어','③청크','④절','⑤전체'];
+  document.getElementById('stage-tabs').innerHTML = labels.map((l,i) => {
+    let cls='stab';
+    if (!S.stageUnlocked[i]) cls+=' locked';
+    else if (i===S.stageIdx) cls+=' active';
+    else if (S.scores[VERSES[S.verseIdx].id]?.['stage'+(i+1)+'done']) cls+=' done';
+    return `<button class="${cls}" onclick="selectStage(${i})">${l}</button>`;
+  }).join('');
+}
+
+function updateHeader() {
+  const v = VERSES[S.verseIdx];
+  const names=['연상 학습','단어 채우기','청크 채우기','절 채우기','전체 암기'];
+  document.getElementById('hd-chapter').textContent = v.title;
+  document.getElementById('hd-stage').textContent = `${'①②③④⑤'[S.stageIdx]} ${names[S.stageIdx]}`;
+  document.querySelectorAll('.dot').forEach((d,i)=>{
+    d.classList.remove('active','done');
+    if(i<S.stageIdx) d.classList.add('done');
+    else if(i===S.stageIdx) d.classList.add('active');
+  });
+}
+
+function updateStats() {
+  document.getElementById('s-streak').textContent = S.streak;
+  document.getElementById('s-mastered').textContent = S.mastered.size;
+  document.getElementById('s-correct').textContent = S.stageCorrect;
+  document.getElementById('s-stage').textContent = (S.stageIdx+1)+'/5';
+}
+
+function showFeedback(type, msg) {
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback ' + type;
+  fb.textContent = msg;
+  fb.style.display = 'block';
+  if (type==='correct') setTimeout(()=>{fb.style.display='none';}, 1500);
+}
+function hideFeedback() { document.getElementById('feedback').style.display='none'; }
+
+/* ═══════════════════════════════════════
+   선택 핸들러
+═══════════════════════════════════════ */
+window.selectVerse = function(i) {
+  stopTTS();
+  S.verseIdx=i; S.stageIdx=0; S.stageCorrect=0; S.streak=0;
+  S.stageUnlocked=[true,true,false,false,false];
+  hideFeedback();
+  renderAll();
+};
+
+window.selectStage = function(i) {
+  if(!S.stageUnlocked[i]) return;
+  stopTTS();
+  S.stageIdx=i; S.stageCorrect=0;
+  hideFeedback();
+  initStage();
+  renderStageTabs(); updateHeader(); updateStats(); renderStage();
+};
+
+function initStage() {
+  const v = VERSES[S.verseIdx];
+  if (S.stageIdx===1) {
+    S.s2_queue = shuffle(v.chunks.map((_,i)=>i));
+    S.s2_correct=0; S.s2_target=5;
+    S.s2_curChunkIdx=-1; S.s2_blankWordIdx=-1;
+    nextS2();
+  } else if (S.stageIdx===2) {
+    S.s3_queue = shuffle(v.chunks.map((_,i)=>i));
+    S.s3_correct=0; S.s3_target=4;
+    S.s3_curChunkIdx=-1;
+    nextS3();
+  } else if (S.stageIdx===3) {
+    S.s4_verseGroups = getVerseGroups(v);
+    S.s4_groupIdx=0; S.s4_done=new Set();
+  } else if (S.stageIdx===4) {
+    S.s5_done=new Set();
+  }
+}
+
+function nextS2() {
+  const v = VERSES[S.verseIdx];
+  if (S.s2_queue.length===0) S.s2_queue = shuffle(v.chunks.map((_,i)=>i));
+  S.s2_curChunkIdx = S.s2_queue.shift();
+  const chunk = v.chunks[S.s2_curChunkIdx];
+  const words = chunk.text.split(' ');
+  S.s2_blankWordIdx = Math.floor(Math.random()*words.length);
+}
+
+function nextS3() {
+  const v = VERSES[S.verseIdx];
+  if (S.s3_queue.length===0) S.s3_queue = shuffle(v.chunks.map((_,i)=>i));
+  S.s3_curChunkIdx = S.s3_queue.shift();
+}
+
+/* ═══════════════════════════════════════
+   메인 렌더 분기
+═══════════════════════════════════════ */
+function renderStage() {
+  const area = document.getElementById('scroll-area');
+  document.getElementById('tts-bar').style.display = S.stageIdx===0 ? 'flex' : 'none';
+  document.getElementById('btn-prev').style.display = S.stageIdx===0 ? 'flex' : 'none';
+
+  if (S.stageIdx===0) renderStage1(area);
+  else if (S.stageIdx===1) renderStage2(area);
+  else if (S.stageIdx===2) renderStage3(area);
+  else if (S.stageIdx===3) renderStage4(area);
+  else renderStage5(area);
+}
+
+/* ═══════════════════════════════════════
+   1단계 — 연상 + TTS
+═══════════════════════════════════════ */
+function renderStage1(area) {
+  const v = VERSES[S.verseIdx];
+  const chunk = v.chunks[S.chunkIdx];
+  const isLast = S.chunkIdx === v.chunks.length-1;
+
+  const emojisHtml = v.chars.map((c,i) => {
+    const isActive = chunk.chars.includes(i);
+    return `<div class="emoji-item${isActive?' active':' dim'}">
+      <div class="emoji-icon">${c.icon}</div>
+      <div class="emoji-label">${c.name}</div>
+    </div>`;
+  }).join('');
+
+  // 전체 구절에서 현재 청크 강조
+  const allText = v.chunks.map((ch,ci) => {
+    const cls = ci===S.chunkIdx ? 'chunk-highlight' : 'chunk-dim';
+    return `${ch.verseNum?`<span class="vnum">${ch.verseNum}</span>`:''}<span class="${cls}">${ch.text}</span>`;
+  }).join(' ');
+
+  // 진행 점 표시
+  const dotsHtml = v.chunks.map((_,i) =>
+    `<div class="pdot${i<S.chunkIdx?' done':i===S.chunkIdx?' current':''}"></div>`
+  ).join('');
+
+  area.innerHTML = `
+    <div class="scene-bg">
+      <div class="scene-glow"></div>
+      <div class="emoji-row">${emojisHtml}</div>
+      <div class="scene-chunk">
+        ${chunk.verseNum?`<span class="vnum">${chunk.verseNum}</span>`:''}
+        ${chunk.text}
+      </div>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div class="card-label">전체 구절</div>
+      <div style="font-size:13px;line-height:2;color:var(--text-dim)">${allText}</div>
+    </div>
+    <div class="progress-info">
+      ${S.chunkIdx+1} / ${v.chunks.length}
+      <div class="progress-dots">${dotsHtml}</div>
+    </div>
+    <div class="spacer"></div>`;
+
+  prepareTTS(chunk.text);
+  document.getElementById('btn-main').textContent = isLast ? '다음 단계 →' : '다음 구절 ▶';
+  document.getElementById('btn-main').className = isLast ? 'btn-main gold' : 'btn-main';
+}
+
+/* ═══════════════════════════════════════
+   2단계 — 랜덤 청크, 랜덤 단어 빈칸
+═══════════════════════════════════════ */
+function renderStage2(area) {
+  const v = VERSES[S.verseIdx];
+  const chunk = v.chunks[S.s2_curChunkIdx];
+  const words = chunk.text.split(' ');
+  const blankIdx = S.s2_blankWordIdx;
+  const blankWord = words[blankIdx];
+
+  // 이모지 (해당 청크 이모지만 깜박)
+  const emojisHtml = v.chars.map((c,i) => {
+    const isActive = chunk.chars.includes(i);
+    return `<div class="emoji-item${isActive?' blinking':' dim'}">
+      <div class="emoji-icon">${c.icon}</div>
+      <div class="emoji-label">${c.name}</div>
+    </div>`;
+  }).join('');
+
+  // 구절 — 빈칸은 글자수만큼 너비
+  const lineHtml = words.map((w,i) => {
+    if (i===blankIdx) {
+      return `<input class="blank-input" id="s2-input" type="text"
+        style="width:${charWidth(w)}"
+        placeholder="${'_'.repeat(w.length)}"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter')onMain()">`;
+    }
+    return `<span>${w}</span>`;
+  }).join(' ');
+
+  const progressHtml = `<div class="progress-info">${S.s2_correct}/${S.s2_target} 정답 완료</div>`;
+
+  area.innerHTML = `
+    <div class="card" style="margin-top:12px">
+      <div class="emoji-row">${emojisHtml}</div>
+      <div style="font-size:14px;line-height:2.2;padding:4px 0">
+        ${chunk.verseNum?`<span class="vnum">${chunk.verseNum}</span>`:''}
+        ${lineHtml}
+      </div>
+    </div>
+    ${progressHtml}
+    <div class="spacer"></div>`;
+
+  document.getElementById('btn-main').textContent = '확인';
+  document.getElementById('btn-main').className = 'btn-main';
+  setTimeout(()=>document.getElementById('s2-input')?.focus(), 100);
+}
+
+function checkStage2() {
+  const v = VERSES[S.verseIdx];
+  const chunk = v.chunks[S.s2_curChunkIdx];
+  const words = chunk.text.split(' ');
+  const answer = words[S.s2_blankWordIdx];
+  const input = document.getElementById('s2-input');
+  if (!input) return;
+  const val = normalize(input.value);
+
+  if (val === answer) {
+    input.className = 'blank-input correct';
+    input.disabled = true;
+    S.s2_correct++; S.stageCorrect++; S.streak++;
+    showFeedback('correct', `✓ 정답! "${answer}"`);
+    updateStats();
+    if (S.s2_correct >= S.s2_target) {
+      // 2단계 완료
+      setTimeout(()=>unlockStage(2), 1000);
+    } else {
+      setTimeout(()=>{ nextS2(); hideFeedback(); renderStage(); }, 1000);
+    }
+  } else {
+    input.className = 'blank-input wrong';
+    S.streak = 0;
+    showFeedback('wrong', `✗ 다시! 정확히 입력하세요`);
+    setTimeout(()=>{ input.className='blank-input'; input.value=''; input.focus(); hideFeedback(); }, 1200);
+  }
+}
+
+/* ═══════════════════════════════════════
+   3단계 — 랜덤 청크 전체 빈칸
+═══════════════════════════════════════ */
+function renderStage3(area) {
+  const v = VERSES[S.verseIdx];
+  const chunk = v.chunks[S.s3_curChunkIdx];
+
+  const emojisHtml = v.chars.map((c,i) => {
+    const isActive = chunk.chars.includes(i);
+    return `<div class="emoji-item${isActive?' blinking':' dim'}">
+      <div class="emoji-icon">${c.icon}</div>
+      <div class="emoji-label">${c.name}</div>
+    </div>`;
+  }).join('');
+
+  // 빈칸 너비 = 청크 텍스트 글자수
+  const blankWidth = charWidth(chunk.text);
+
+  const progressHtml = `<div class="progress-info">${S.s3_correct}/${S.s3_target} 정답 완료</div>`;
+
+  area.innerHTML = `
+    <div class="card" style="margin-top:12px">
+      <div class="emoji-row">${emojisHtml}</div>
+      <div style="padding:4px 0">
+        ${chunk.verseNum?`<div style="margin-bottom:6px"><span class="vnum">${chunk.verseNum}</span></div>`:''}
+        <input class="chunk-blank-input" id="s3-input" type="text"
+          style="width:100%"
+          placeholder="${'_'.repeat(Math.min(chunk.text.length, 20))}..."
+          autocomplete="off" autocorrect="off" spellcheck="false"
+          onkeydown="if(event.key==='Enter')onMain()">
+      </div>
+    </div>
+    ${progressHtml}
+    <div class="spacer"></div>`;
+
+  document.getElementById('btn-main').textContent = '확인';
+  document.getElementById('btn-main').className = 'btn-main';
+  setTimeout(()=>document.getElementById('s3-input')?.focus(), 100);
+}
+
+function checkStage3() {
+  const v = VERSES[S.verseIdx];
+  const chunk = v.chunks[S.s3_curChunkIdx];
+  const answer = chunk.text;
+  const input = document.getElementById('s3-input');
+  if (!input) return;
+  const val = normalize(input.value);
+
+  if (val === answer) {
+    input.className = 'chunk-blank-input correct';
+    input.disabled = true;
+    S.s3_correct++; S.stageCorrect++; S.streak++;
+    showFeedback('correct', `✓ 정답!`);
+    updateStats();
+    if (S.s3_correct >= S.s3_target) {
+      setTimeout(()=>unlockStage(3), 1000);
+    } else {
+      setTimeout(()=>{ nextS3(); hideFeedback(); renderStage(); }, 1000);
+    }
+  } else {
+    input.className = 'chunk-blank-input wrong';
+    S.streak = 0;
+    showFeedback('wrong', `✗ 정확히 입력하세요`);
+    setTimeout(()=>{ input.className='chunk-blank-input'; input.value=''; input.focus(); hideFeedback(); }, 1400);
+  }
+}
+
+/* ═══════════════════════════════════════
+   4단계 — 절 단위, 이모지 표시
+═══════════════════════════════════════ */
+function renderStage4(area) {
+  const v = VERSES[S.verseIdx];
+  const groups = S.s4_verseGroups;
+  const g = groups[S.s4_groupIdx];
+
+  // 이 절에 쓰이는 이모지 모음 (중복 제거, 순서 유지)
+  const charIdxs = [];
+  g.chunks.forEach(ch => ch.chars.forEach(ci => { if(!charIdxs.includes(ci)) charIdxs.push(ci); }));
+
+  const emojisHtml = charIdxs.map(ci => {
+    const c = v.chars[ci];
+    const isDone = S.s4_done.has(S.s4_groupIdx);
+    return `<div class="emoji-item${isDone?' correct':' blinking'}">
+      <div class="emoji-icon">${c.icon}</div>
+      <div class="emoji-label">${c.name}</div>
+    </div>`;
+  }).join('');
+
+  // 이미 완료된 절은 텍스트 보여주고, 현재 절만 입력창
+  const groupsHtml = groups.map((grp, gi) => {
+    const isDone = S.s4_done.has(gi);
+    const isCurrent = gi === S.s4_groupIdx;
+    const grpCharIdxs = [];
+    grp.chunks.forEach(ch => ch.chars.forEach(ci => { if(!grpCharIdxs.includes(ci)) grpCharIdxs.push(ci); }));
+    const miniEmojis = grpCharIdxs.map(ci => {
+      const c = v.chars[ci];
+      return `<span class="mini-emoji${isDone?' correct':isCurrent?' blinking':''}">${c.icon}</span>`;
+    }).join('');
+
+    if (isDone) {
+      const fullText = grp.chunks.map(ch=>ch.text).join(' ');
+      return `<div class="verse-block">
+        <div class="verse-block-label">
+          <span class="vnum" style="font-size:12px">${grp.verseNum}</span>
+          <div class="verse-block-emojis">${miniEmojis}</div>
+        </div>
+        <div style="font-size:13px;color:var(--teal-light);line-height:1.8;background:rgba(45,140,120,.06);border-radius:8px;padding:8px 10px">${fullText}</div>
+      </div>`;
+    } else if (isCurrent) {
+      return `<div class="verse-block">
+        <div class="verse-block-label">
+          <span class="vnum" style="font-size:12px">${grp.verseNum}</span>
+          <div class="verse-block-emojis">${miniEmojis}</div>
+        </div>
+        <textarea class="verse-textarea" id="s4-input-${gi}"
+          placeholder="이 절 전체를 입력하세요..."
+          autocomplete="off" autocorrect="off" spellcheck="false"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();onMain()}"
+          oninput="autoResize(this)"></textarea>
+      </div>`;
+    } else {
+      return `<div class="verse-block">
+        <div class="verse-block-label">
+          <span class="vnum" style="font-size:12px;opacity:.4">${grp.verseNum}</span>
+          <div class="verse-block-emojis">${grpCharIdxs.map(ci=>`<span class="mini-emoji" style="opacity:.2">${v.chars[ci].icon}</span>`).join('')}</div>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);background:var(--deep3);border-radius:8px;padding:8px 10px">아직 잠김</div>
+      </div>`;
+    }
+  }).join('');
+
+  area.innerHTML = `
+    <div class="card" style="margin-top:12px">
+      <div class="card-label">${g.verseNum} 이모지</div>
+      <div class="emoji-row" style="padding:8px 0">${emojisHtml}</div>
+    </div>
+    <div class="card">${groupsHtml}</div>
+    <div class="spacer"></div>`;
+
+  document.getElementById('btn-main').textContent = '확인';
+  document.getElementById('btn-main').className = 'btn-main';
+  setTimeout(()=>document.getElementById(`s4-input-${S.s4_groupIdx}`)?.focus(), 100);
+}
+
+window.autoResize = function(el) {
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,160)+'px';
+};
+
+function checkStage4() {
+  const v = VERSES[S.verseIdx];
+  const groups = S.s4_verseGroups;
+  const g = groups[S.s4_groupIdx];
+  const answer = normalize(g.chunks.map(ch=>ch.text).join(' '));
+  const input = document.getElementById(`s4-input-${S.s4_groupIdx}`);
+  if (!input) return;
+  const val = normalize(input.value);
+
+  if (val === answer) {
+    input.className = 'verse-textarea correct';
+    input.disabled = true;
+    S.s4_done.add(S.s4_groupIdx);
+    S.stageCorrect++; S.streak++;
+    showFeedback('correct','✓ 정답!');
+    updateStats();
+    if (S.s4_done.size === groups.length) {
+      setTimeout(()=>unlockStage(4), 1000);
+    } else {
+      S.s4_groupIdx++;
+      setTimeout(()=>{ hideFeedback(); renderStage(); }, 1000);
+    }
+  } else {
+    input.className = 'verse-textarea wrong';
+    S.streak = 0;
+    showFeedback('wrong','✗ 정확히 입력하세요');
+    setTimeout(()=>{ input.className='verse-textarea'; input.focus(); hideFeedback(); }, 1400);
+  }
+}
+
+/* ═══════════════════════════════════════
+   5단계 — 전체 한번에
+═══════════════════════════════════════ */
+function renderStage5(area) {
+  const v = VERSES[S.verseIdx];
+  const groups = getVerseGroups(v);
+
+  // 전체 이모지 나열
+  const allCharIdxs = [];
+  v.chunks.forEach(ch => ch.chars.forEach(ci => { if(!allCharIdxs.includes(ci)) allCharIdxs.push(ci); }));
+  const allDone = S.s5_done.size === groups.length;
+  const emojisHtml = allCharIdxs.map(ci => {
+    const c = v.chars[ci];
+    // 이 캐릭터가 속한 절이 하나라도 완료됐으면 correct
+    const anyDone = groups.some((g,gi) =>
+      S.s5_done.has(gi) && g.chunks.some(ch=>ch.chars.includes(ci))
+    );
+    return `<div class="emoji-item${anyDone?' correct':''}">
+      <div class="emoji-icon">${c.icon}</div>
+      <div class="emoji-label">${c.name}</div>
+    </div>`;
+  }).join('');
+
+  // 절별 입력칸
+  const blocksHtml = groups.map((g, gi) => {
+    const isDone = S.s5_done.has(gi);
+    const fullText = g.chunks.map(ch=>ch.text).join(' ');
+    return `<div class="full-verse-block">
+      <div class="full-vnum">${g.verseNum}</div>
+      ${isDone
+        ? `<div class="full-input" style="border-color:var(--teal);background:rgba(45,140,120,.05);color:var(--teal-light);display:block;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.8">${fullText}</div>`
+        : `<textarea class="full-input" id="s5-input-${gi}"
+            placeholder="이 절을 정확히 입력하세요..."
+            autocomplete="off" autocorrect="off" spellcheck="false"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();checkS5Single(${gi})}"
+            oninput="autoResize(this)"></textarea>`
+      }
+    </div>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="card" style="margin-top:12px">
+      <div class="card-label">전체 이모지</div>
+      <div class="emoji-row" style="padding:6px 0">${emojisHtml}</div>
+    </div>
+    <div class="card">${blocksHtml}</div>
+    <div class="spacer"></div>`;
+
+  document.getElementById('btn-main').textContent = '전체 확인';
+  document.getElementById('btn-main').className = 'btn-main gold';
+  setTimeout(()=>document.getElementById('s5-input-0')?.focus(), 100);
+}
+
+window.checkS5Single = function(gi) {
+  const v = VERSES[S.verseIdx];
+  const groups = getVerseGroups(v);
+  const g = groups[gi];
+  const answer = normalize(g.chunks.map(ch=>ch.text).join(' '));
+  const input = document.getElementById(`s5-input-${gi}`);
+  if (!input || S.s5_done.has(gi)) return;
+  const val = normalize(input.value);
+  if (val === answer) {
+    S.s5_done.add(gi);
+    showFeedback('correct',`✓ ${g.verseNum} 정답!`);
+    // 이모지 업데이트
+    renderStage5(document.getElementById('scroll-area'));
+    // 다음 입력칸 포커스
+    const nextInput = document.getElementById(`s5-input-${gi+1}`);
+    if (nextInput) setTimeout(()=>nextInput.focus(), 200);
+  } else {
+    input.className = 'full-input wrong';
+    showFeedback('wrong','✗ 정확히 입력하세요');
+    setTimeout(()=>{ if(input) { input.className='full-input'; input.focus(); } hideFeedback(); }, 1400);
+  }
+};
+
+function checkStage5() {
+  const v = VERSES[S.verseIdx];
+  const groups = getVerseGroups(v);
+  // 아직 안 된 것들 체크
+  let allOk = true;
+  groups.forEach((g, gi) => {
+    if (S.s5_done.has(gi)) return;
+    const input = document.getElementById(`s5-input-${gi}`);
+    if (!input) return;
+    const answer = normalize(g.chunks.map(ch=>ch.text).join(' '));
+    const val = normalize(input.value);
+    if (val === answer) {
+      S.s5_done.add(gi);
+    } else {
+      allOk = false;
+      input.className='full-input wrong';
+      setTimeout(()=>{ if(input) input.className='full-input'; }, 1400);
+    }
+  });
+
+  if (S.s5_done.size === groups.length) {
+    // 완전 완료!
+    S.stageCorrect++; S.streak++;
+    S.mastered.add(v.id);
+    updateStats();
+    saveScore(v.id, {mastered:true, masteredAt:new Date().toISOString(), stage5done:true});
+    renderVerseTabs();
+    showComplete();
+  } else {
+    S.streak=0;
+    showFeedback('wrong','✗ 모든 절을 정확히 입력하세요');
+    // 부분 완료된 절 업데이트
+    renderStage5(document.getElementById('scroll-area'));
+  }
+}
+
+/* ═══════════════════════════════════════
+   단계 잠금 해제
+═══════════════════════════════════════ */
+function unlockStage(next) {
+  S.stageUnlocked[next]=true;
+  const v = VERSES[S.verseIdx];
+  saveScore(v.id, {['stage'+next+'done']:true, stage:next});
+  showFeedback('correct', `✓ ${next}단계 잠금 해제! 다음 단계로 진행합니다.`);
+  setTimeout(()=>{ window.selectStage(next); }, 1200);
+}
+
+/* ═══════════════════════════════════════
+   완료 화면
+═══════════════════════════════════════ */
+function showComplete() {
+  const v = VERSES[S.verseIdx];
+  document.getElementById('scroll-area').innerHTML = `
+    <div class="complete-screen">
+      <div class="complete-icon">🎊</div>
+      <div class="complete-title">${v.title}<br>완전 암기!</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:8px;margin-bottom:24px">
+        5단계를 모두 완료했습니다
+      </div>
+      ${S.mastered.size===VERSES.length
+        ? `<div style="font-size:16px;color:var(--gold-light);margin-bottom:16px">🏆 전체 ${VERSES.length}구절 완전 암기 달성!</div>`
+        : ''
+      }
+      <a href="dashboard.html" style="display:block;padding:13px 28px;background:linear-gradient(135deg,var(--gold),#a07830);border-radius:12px;color:#1a1200;font-weight:700;text-decoration:none;font-size:15px;text-align:center;margin-bottom:10px">대시보드 보기 →</a>
+      <button onclick="selectVerse(${(S.verseIdx+1)%VERSES.length})" style="width:100%;padding:11px;background:none;border:1px solid var(--card-border);border-radius:12px;color:var(--text-dim);font-size:14px;cursor:pointer">다음 구절 →</button>
+    </div>`;
+  document.getElementById('tts-bar').style.display='none';
+  document.getElementById('bottom-nav').style.display='none';
+}
+
+/* ═══════════════════════════════════════
+   TTS
+═══════════════════════════════════════ */
+function prepareTTS(text) {
+  stopTTS();
+  if (!('speechSynthesis' in window)) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang='ko-KR';
+  utter.rate=parseFloat(document.getElementById('tts-speed')?.value||1);
+  utter.onstart=()=>{ S.ttsPlaying=true; document.getElementById('tts-btn').textContent='⏸'; };
+  utter.onend=()=>{ S.ttsPlaying=false; document.getElementById('tts-btn').textContent='▶'; document.getElementById('tts-fill').style.width='100%'; };
+  utter.onboundary=(e)=>{ if(utter.text) document.getElementById('tts-fill').style.width=Math.round(e.charIndex/utter.text.length*100)+'%'; };
+  S.ttsUtter=utter;
+  setTimeout(()=>{ if(S.stageIdx===0) speechSynthesis.speak(utter); },300);
+}
+window.toggleTTS=function(){
+  if(!S.ttsUtter) return;
+  if(S.ttsPlaying){speechSynthesis.pause();S.ttsPlaying=false;document.getElementById('tts-btn').textContent='▶';}
+  else if(speechSynthesis.paused){speechSynthesis.resume();S.ttsPlaying=true;document.getElementById('tts-btn').textContent='⏸';}
+  else{speechSynthesis.speak(S.ttsUtter);}
+};
+window.changeTTSSpeed=function(){
+  if(S.ttsUtter){S.ttsUtter.rate=parseFloat(document.getElementById('tts-speed').value);}
+};
+function stopTTS(){
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  S.ttsPlaying=false; S.ttsUtter=null;
+}
+
+/* ═══════════════════════════════════════
+   버튼 핸들러
+═══════════════════════════════════════ */
+window.onMain = function() {
+  if (S.stageIdx===0) {
+    const v=VERSES[S.verseIdx];
+    if (S.chunkIdx < v.chunks.length-1) {
+      S.chunkIdx++;
+      stopTTS(); renderStage();
+    } else {
+      S.stageUnlocked[2]=true;
+      saveScore(VERSES[S.verseIdx].id,{stage1done:true});
+      showFeedback('correct','✓ 연상 완료! 단어 채우기로 이동합니다.');
+      setTimeout(()=>{ window.selectStage(1); },1000);
+    }
+  } else if (S.stageIdx===1) checkStage2();
+  else if (S.stageIdx===2) checkStage3();
+  else if (S.stageIdx===3) checkStage4();
+  else checkStage5();
+};
+
+window.onPrev = function() {
+  if (S.stageIdx===0 && S.chunkIdx>0) {
+    S.chunkIdx--;
+    stopTTS(); renderStage();
+  }
+};
+
+/* 초기화 */
+S.chunkIdx=0;
+initStage();
+renderAll();
+</script>
+</body>
+</html>

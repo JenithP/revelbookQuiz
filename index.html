@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>말씀 암기 — 요한계시록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#c9a84c;
+  --gold-light:#e8cc80;
+  --deep:#0d0a1a;
+  --deep2:#130f24;
+  --deep3:#1c1535;
+  --purple:#4a3b8c;
+  --purple-light:#7b6abf;
+  --text:#f0ece0;
+  --text-dim:#9e96b8;
+  --radius:16px;
+}
+html,body{height:100%;overflow-x:hidden}
+body{
+  font-family:'Pretendard',sans-serif;
+  background:var(--deep);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:24px 16px;
+  position:relative;
+}
+
+/* 배경 */
+.bg-stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite var(--delay,0s)}
+@keyframes twinkle{0%,100%{opacity:.1;transform:scale(1)}50%{opacity:.7;transform:scale(1.3)}}
+.bg-glow{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 60% 40% at 50% 100%, rgba(74,59,140,.35) 0%, transparent 70%)}
+
+/* 메인 카드 */
+.card{
+  position:relative;z-index:1;
+  width:100%;max-width:380px;
+  background:var(--deep2);
+  border:1px solid rgba(201,168,76,.18);
+  border-radius:24px;
+  padding:36px 28px 32px;
+  animation:fadeUp .6s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.logo-area{text-align:center;margin-bottom:28px}
+.logo-cross{
+  width:52px;height:52px;margin:0 auto 12px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--purple),var(--gold));
+  border-radius:14px;
+  font-size:26px;
+}
+.logo-title{
+  font-family:'Nanum Myeongjo',serif;
+  font-size:22px;font-weight:800;
+  color:var(--gold-light);
+  letter-spacing:-.5px;
+  line-height:1.3;
+}
+.logo-sub{font-size:12px;color:var(--text-dim);margin-top:4px;letter-spacing:.5px}
+
+/* 탭 */
+.tabs{display:flex;gap:0;margin-bottom:24px;background:var(--deep3);border-radius:10px;padding:3px}
+.tab{
+  flex:1;padding:8px;text-align:center;font-size:13px;font-weight:500;
+  color:var(--text-dim);border-radius:8px;cursor:pointer;transition:.2s;border:none;background:none;
+}
+.tab.active{background:var(--purple);color:var(--text)}
+
+/* 폼 */
+.form-group{margin-bottom:14px}
+label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;letter-spacing:.3px}
+input,select{
+  width:100%;padding:11px 14px;
+  background:var(--deep3);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;color:var(--text);
+  font-size:14px;font-family:'Pretendard',sans-serif;
+  transition:.2s;outline:none;
+  -webkit-appearance:none;appearance:none;
+}
+input:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.12)}
+input::placeholder{color:var(--text-dim)}
+select option{background:var(--deep2)}
+
+.btn-primary{
+  width:100%;padding:13px;margin-top:8px;
+  background:linear-gradient(135deg,var(--purple),var(--purple-light));
+  border:none;border-radius:12px;
+  color:#fff;font-size:15px;font-weight:600;
+  font-family:'Pretendard',sans-serif;
+  cursor:pointer;transition:.2s;
+  position:relative;overflow:hidden;
+}
+.btn-primary::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent,rgba(255,255,255,.08));
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(74,59,140,.4)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.btn-guest{
+  width:100%;padding:13px;margin-bottom:4px;
+  background:rgba(201,168,76,.12);
+  border:1px solid rgba(201,168,76,.3);border-radius:12px;
+  color:var(--gold-light);font-size:15px;font-weight:600;
+  font-family:'Pretendard',sans-serif;
+  cursor:pointer;transition:.2s;
+}
+.btn-guest:hover{background:rgba(201,168,76,.2);transform:translateY(-1px)}
+
+.divider{
+  display:flex;align-items:center;gap:10px;
+  margin:16px 0;color:var(--text-dim);font-size:12px;
+}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07)}
+
+/* 환영 메시지 (로그인 성공 후) */
+.welcome{display:none;text-align:center}
+.welcome-name{
+  font-family:'Nanum Myeongjo',serif;
+  font-size:20px;color:var(--gold-light);margin-bottom:6px;
+}
+.welcome-group{font-size:13px;color:var(--text-dim);margin-bottom:24px}
+.btn-go{
+  display:block;width:100%;padding:14px;
+  background:linear-gradient(135deg,var(--gold),#a07830);
+  border:none;border-radius:12px;
+  color:#1a1200;font-size:15px;font-weight:700;
+  font-family:'Pretendard',sans-serif;
+  cursor:pointer;text-decoration:none;text-align:center;
+  transition:.2s;
+}
+.btn-go:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,.3)}
+
+.msg{font-size:12px;text-align:center;margin-top:10px;min-height:16px}
+.msg.error{color:#f08080}
+.msg.success{color:#80e0a0}
+
+.spinner{
+  width:18px;height:18px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- 배경 별 -->
+<div class="bg-stars" id="stars"></div>
+<div class="bg-glow"></div>
+
+<div class="card" id="main-card">
+  <div class="logo-area">
+    <div class="logo-cross">✝</div>
+    <div class="logo-title">말씀 암기 훈련</div>
+    <div class="logo-sub">요한계시록 핵심 구절</div>
+  </div>
+
+  <!-- 게스트 바로 시작 -->
+  <button class="btn-guest" onclick="doGuest()">🚀 게스트로 바로 시작</button>
+  <div class="divider">또는 계정으로</div>
+
+  <!-- 탭 -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('login')">로그인</button>
+    <button class="tab" onclick="switchTab('signup')">새로 가입</button>
+  </div>
+
+  <!-- 로그인 폼 -->
+  <div id="form-login">
+    <div class="form-group">
+      <label>소속</label>
+      <select id="login-group">
+        <option value="">소속을 선택하세요</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>이름</label>
+      <input type="text" id="login-name" placeholder="이름을 입력하세요" autocomplete="off">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">입장하기</button>
+    <div class="msg" id="login-msg"></div>
+  </div>
+
+  <!-- 가입 폼 -->
+  <div id="form-signup" style="display:none">
+    <div class="form-group">
+      <label>소속 / 부서</label>
+      <input type="text" id="signup-group" placeholder="예: 청년부, 1구역, 교사회...">
+    </div>
+    <div class="form-group">
+      <label>이름</label>
+      <input type="text" id="signup-name" placeholder="실명을 입력하세요">
+    </div>
+    <button class="btn-primary" onclick="doSignup()">가입하기</button>
+    <div class="msg" id="signup-msg"></div>
+  </div>
+
+  <!-- 환영 -->
+  <div class="welcome" id="welcome-area">
+    <div style="font-size:32px;margin-bottom:12px">🙏</div>
+    <div class="welcome-name" id="welcome-name"></div>
+    <div class="welcome-group" id="welcome-group"></div>
+    <a href="app.html" class="btn-go" id="go-btn">암기 훈련 시작 →</a>
+    <div style="margin-top:10px">
+      <a href="dashboard.html" style="color:var(--text-dim);font-size:12px;text-decoration:none">내 현황 / 순위 보기</a>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+// ⚠️ 여기에 Firebase 설정 붙여넣기
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCQrXxJaiSPF7_Da569LbeJIXBtOMg5UHU",
+  authDomain: "revel-quiz.firebaseapp.com",
+  projectId: "revel-quiz",
+  storageBucket: "revel-quiz.firebasestorage.app",
+  messagingSenderId: "984978228798",
+  appId: "1:984978228798:web:9d16a9ea1928c8ff7b736f"
+};
+
+const app = initializeApp(FIREBASE_CONFIG);
+const db = getFirestore(app);
+
+// 저장된 사용자 체크
+const saved = localStorage.getItem('revel_user');
+if (saved) {
+  const u = JSON.parse(saved);
+  showWelcome(u);
+}
+
+// 소속 목록 로드 (기존 유저의 소속 자동완성용)
+async function loadGroups() {
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    const groups = new Set();
+    snap.forEach(d => { if (d.data().group) groups.add(d.data().group); });
+    const sel = document.getElementById('login-group');
+    groups.forEach(g => {
+      const o = document.createElement('option');
+      o.value = g; o.textContent = g;
+      sel.appendChild(o);
+    });
+  } catch(e) {}
+}
+loadGroups();
+
+// 로그인
+
+window.doGuest = function() {
+  const userData = { uid: 'guest_' + Date.now(), name: '게스트', group: '테스트', isGuest: true };
+  localStorage.setItem('revel_user', JSON.stringify(userData));
+  location.href = 'app.html';
+};
+
+window.doLogin = async function() {
+  const group = document.getElementById('login-group').value;
+  const name = document.getElementById('login-name').value.trim();
+  const msg = document.getElementById('login-msg');
+  if (!group || !name) { msg.className='msg error'; msg.textContent='소속과 이름을 모두 입력해주세요'; return; }
+
+  msg.innerHTML = '<span class="spinner"></span>확인 중...';
+  msg.className = 'msg';
+
+  try {
+    const q = query(collection(db,'users'), where('group','==',group), where('name','==',name));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      msg.className='msg error';
+      msg.textContent='일치하는 회원 정보가 없습니다. 먼저 가입해주세요.';
+      return;
+    }
+    const userData = { uid: snap.docs[0].id, name, group };
+    await setDoc(doc(db,'users',userData.uid), { lastLogin: serverTimestamp() }, { merge: true });
+    localStorage.setItem('revel_user', JSON.stringify(userData));
+    msg.className='msg success'; msg.textContent='✓ 확인되었습니다';
+    setTimeout(() => showWelcome(userData), 400);
+  } catch(e) {
+    msg.className='msg error'; msg.textContent='오류가 발생했습니다. 다시 시도해주세요.';
+  }
+};
+
+// 가입
+window.doSignup = async function() {
+  const group = document.getElementById('signup-group').value.trim();
+  const name = document.getElementById('signup-name').value.trim();
+  const msg = document.getElementById('signup-msg');
+  if (!group || !name) { msg.className='msg error'; msg.textContent='소속과 이름을 모두 입력해주세요'; return; }
+
+  msg.innerHTML = '<span class="spinner"></span>가입 중...';
+  msg.className = 'msg';
+
+  try {
+    // 중복 체크
+    const q = query(collection(db,'users'), where('group','==',group), where('name','==',name));
+    const dup = await getDocs(q);
+    if (!dup.empty) {
+      msg.className='msg error';
+      msg.textContent='이미 가입된 정보입니다. 로그인 탭에서 입장해주세요.';
+      return;
+    }
+    const uid = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+    await setDoc(doc(db,'users',uid), {
+      name, group, uid,
+      joinedAt: serverTimestamp(),
+      lastLogin: serverTimestamp(),
+      totalMastered: 0,
+      accuracy: 0
+    });
+    const userData = { uid, name, group };
+    localStorage.setItem('revel_user', JSON.stringify(userData));
+    msg.className='msg success'; msg.textContent='✓ 가입 완료!';
+    setTimeout(() => showWelcome(userData), 400);
+  } catch(e) {
+    msg.className='msg error'; msg.textContent='오류가 발생했습니다: ' + e.message;
+  }
+};
+
+function showWelcome(u) {
+  document.getElementById('form-login').style.display = 'none';
+  document.getElementById('form-signup').style.display = 'none';
+  document.querySelector('.tabs').style.display = 'none';
+  document.getElementById('welcome-area').style.display = 'block';
+  document.getElementById('welcome-name').textContent = u.name + ' 님, 환영합니다';
+  document.getElementById('welcome-group').textContent = u.group;
+}
+
+window.showWelcome = showWelcome;
+</script>
+
+<script>
+// 별 배경 생성
+const stars = document.getElementById('stars');
+for (let i = 0; i < 60; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const size = Math.random() * 2 + 1;
+  s.style.cssText = `
+    width:${size}px;height:${size}px;
+    left:${Math.random()*100}%;top:${Math.random()*100}%;
+    --d:${2+Math.random()*4}s;--delay:${Math.random()*4}s;
+    opacity:${Math.random()*.4+.1}
+  `;
+  stars.appendChild(s);
+}
+
+// 탭 전환
+window.switchTab = function(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='signup')));
+  document.getElementById('form-login').style.display = tab==='login' ? '' : 'none';
+  document.getElementById('form-signup').style.display = tab==='signup' ? '' : 'none';
+};
+
+// 엔터키
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('form-login').style.display !== 'none') window.doLogin?.();
+    else window.doSignup?.();
+  }
+});
+</script>
+</body>
+</html>
