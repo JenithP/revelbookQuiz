@@ -241,11 +241,37 @@ const FIREBASE_CONFIG = {
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
 
-// 저장된 사용자 체크
-const saved = localStorage.getItem('revel_user');
-if (saved) {
-  const u = JSON.parse(saved);
-  showWelcome(u);
+// 텔레그램 봇 자동 로그인 (?uid=텔레그램ID)
+const urlUid = new URLSearchParams(window.location.search).get('uid');
+if (urlUid) {
+  getDoc(doc(db, 'users', urlUid)).then(snap => {
+    if (snap.exists()) {
+      const u = snap.data();
+      localStorage.setItem('revel_user', JSON.stringify({
+        uid: urlUid,
+        name: u.name,
+        group: u.group,
+        bu: u.bu || '',
+        team: u.team || '',
+        gu: u.gu || '',
+        dept: u.dept || ''
+      }));
+      location.href = 'app.html';
+    } else {
+      // uid 없으면 일반 흐름으로 fallback
+      bootSavedUser();
+    }
+  }).catch(() => bootSavedUser());
+} else {
+  bootSavedUser();
+}
+
+function bootSavedUser() {
+  const saved = localStorage.getItem('revel_user');
+  if (saved) {
+    const u = JSON.parse(saved);
+    showWelcome(u);
+  }
 }
 
 // 소속 목록 로드 (기존 유저의 소속 자동완성용)

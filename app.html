@@ -254,12 +254,22 @@ body{
   padding:10px 14px;display:flex;gap:8px;flex-shrink:0;
 }
 .btn-prev{
-  flex:0 0 70px;padding:11px;border-radius:10px;
+  flex:1;padding:11px;border-radius:10px;
   border:1px solid var(--card-border);background:none;
   color:var(--text-dim);font-size:13px;cursor:pointer;
+  font-family:'Pretendard',sans-serif;
 }
-.btn-main{
+.btn-prev:disabled{opacity:.35;cursor:not-allowed}
+.btn-replay{
   flex:1;padding:11px;border-radius:10px;
+  background:rgba(201,168,76,0.15);
+  border:1px solid rgba(201,168,76,0.4);
+  color:#C9A84C;font-size:13px;cursor:pointer;
+  font-family:'Pretendard',sans-serif;transition:.2s;
+}
+.btn-replay:hover{background:rgba(201,168,76,0.25)}
+.btn-main{
+  flex:2;padding:11px;border-radius:10px;
   background:var(--purple);border:none;
   color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;
   font-family:'Pretendard',sans-serif;
@@ -288,6 +298,27 @@ body{
   width:200px;height:80px;
   background:radial-gradient(ellipse,rgba(74,59,140,.4) 0%,transparent 70%);
 }
+.scene-img-wrap{
+  position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  width:100%;min-height:140px;
+}
+.scene-img{
+  width:140px;height:140px;object-fit:contain;
+  transition:opacity 0.3s ease;
+  filter:drop-shadow(0 4px 12px rgba(201,168,76,0.3));
+  opacity:1;
+}
+.scene-img.fade{
+  opacity:0;
+  transition:opacity 0.2s ease;
+}
+.scene-fallback{
+  font-size:60px;text-align:center;line-height:1;
+  filter:drop-shadow(0 4px 12px rgba(201,168,76,0.3));
+  transition:opacity 0.3s ease;opacity:1;
+}
+.scene-fallback.fade{opacity:0;transition:opacity 0.2s ease}
 .scene-chunk{
   position:relative;z-index:1;
   background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);
@@ -342,7 +373,8 @@ body{
 </div>
 
 <div class="bottom-nav" id="bottom-nav">
-  <button class="btn-prev" id="btn-prev" onclick="onPrev()">◀</button>
+  <button class="btn-prev" id="btn-prev" onclick="onPrev()">◀ 이전 듣기</button>
+  <button class="btn-replay" id="btn-replay" onclick="onReplay()">🔊 다시 듣기</button>
   <button class="btn-main" id="btn-main" onclick="onMain()">확인</button>
 </div>
 
@@ -376,16 +408,16 @@ const VERSES = [
       {icon:'✍️',name:'요한'}
     ],
     chunks:[
-      {verseNum:'1절', text:'예수 그리스도의 계시라', chars:[0,1]},
-      {text:'이는 하나님이 그에게 주사', chars:[2,0]},
-      {text:'반드시 속히 될 일을 그 종들에게 보이시려고', chars:[2]},
-      {text:'그 천사를 그 종 요한에게 보내어', chars:[3,4]},
-      {text:'지시하신 것이라', chars:[3]},
-      {verseNum:'2절', text:'요한은 하나님의 말씀과 예수 그리스도의 증거', chars:[4,2,0]},
-      {text:'곧 자기의 본 것을 다 증거하였느니라', chars:[4]},
-      {verseNum:'3절', text:'이 예언의 말씀을 읽는 자와 듣는 자들과', chars:[1]},
-      {text:'그 가운데 기록한 것을 지키는 자들이 복이 있나니', chars:[1]},
-      {text:'때가 가까움이라', chars:[2]}
+      {verseNum:'1절', text:'예수 그리스도의 계시라', chars:[0,1], image:'jesus.png'},
+      {text:'이는 하나님이 그에게 주사', chars:[2,0], image:'god_light.png'},
+      {text:'반드시 속히 될 일을 그 종들에게 보이시려고', chars:[2], image:'crowd.png'},
+      {text:'그 천사를 그 종 요한에게 보내어', chars:[3,4], image:'angel.png'},
+      {text:'지시하신 것이라', chars:[3], image:'scroll.png'},
+      {verseNum:'2절', text:'요한은 하나님의 말씀과 예수 그리스도의 증거', chars:[4,2,0], image:'john.png'},
+      {text:'곧 자기의 본 것을 다 증거하였느니라', chars:[4], image:'john.png'},
+      {verseNum:'3절', text:'이 예언의 말씀을 읽는 자와 듣는 자들과', chars:[1], image:'crowd.png'},
+      {text:'그 가운데 기록한 것을 지키는 자들이 복이 있나니', chars:[1], image:'crowd.png'},
+      {text:'때가 가까움이라', chars:[2], image:'hourglass_glow.png'}
     ]
   },
   {
@@ -398,16 +430,16 @@ const VERSES = [
       {icon:'✡️',name:'이스라엘'}
     ],
     chunks:[
-      {verseNum:'1절', text:'이 일 후에 내가 네 천사가 땅 네 모퉁이에 선 것을 보니', chars:[0]},
-      {text:'땅의 사방의 바람을 붙잡아', chars:[0,1]},
-      {text:'바람으로 하여금 땅에나 바다에나 각종 나무에 불지 못하게 하더라', chars:[1]},
-      {verseNum:'2절', text:'또 보매 다른 천사가 살아 계신 하나님의 인을 가지고', chars:[2,3]},
-      {text:'해 돋는 데로부터 올라와서', chars:[2]},
-      {text:'땅과 바다를 해롭게 할 권세를 얻은 네 천사를 향하여 큰 소리로 외쳐', chars:[0,2]},
-      {verseNum:'3절', text:'가로되 우리가 우리 하나님의 종들의 이마에 인치기까지', chars:[3]},
-      {text:'땅이나 바다나 나무나 해하지 말라 하더라', chars:[0]},
-      {verseNum:'4절', text:'내가 인 맞은 자의 수를 들으니', chars:[4]},
-      {text:'이스라엘 자손의 각 지파 중에서 인 맞은 자들이 십사만 사천이니', chars:[4]}
+      {verseNum:'1절', text:'이 일 후에 내가 네 천사가 땅 네 모퉁이에 선 것을 보니', chars:[0], image:'four_angels.png'},
+      {text:'땅의 사방의 바람을 붙잡아', chars:[0,1], image:'wind_swirl.png'},
+      {text:'바람으로 하여금 땅에나 바다에나 각종 나무에 불지 못하게 하더라', chars:[1], image:'wind_swirl.png'},
+      {verseNum:'2절', text:'또 보매 다른 천사가 살아 계신 하나님의 인을 가지고', chars:[2,3], image:'seal_stamp.png'},
+      {text:'해 돋는 데로부터 올라와서', chars:[2], image:'sun_rising.png'},
+      {text:'땅과 바다를 해롭게 할 권세를 얻은 네 천사를 향하여 큰 소리로 외쳐', chars:[0,2], image:'four_angels.png'},
+      {verseNum:'3절', text:'가로되 우리가 우리 하나님의 종들의 이마에 인치기까지', chars:[3], image:'seal_stamp.png'},
+      {text:'땅이나 바다나 나무나 해하지 말라 하더라', chars:[0], image:'four_angels.png'},
+      {verseNum:'4절', text:'내가 인 맞은 자의 수를 들으니', chars:[4], image:'israel_tribes.png'},
+      {text:'이스라엘 자손의 각 지파 중에서 인 맞은 자들이 십사만 사천이니', chars:[4], image:'israel_tribes.png'}
     ]
   },
   {
@@ -419,12 +451,12 @@ const VERSES = [
       {icon:'🌍',name:'열방'}
     ],
     chunks:[
-      {verseNum:'10절', text:'내가 천사의 손에서 작은 책을 갖다 먹어버리니', chars:[0,1,2]},
-      {text:'내 입에는 꿀같이 다나', chars:[2,1]},
-      {text:'먹은 후에 내 배에서는 쓰게 되더라', chars:[2,1]},
-      {verseNum:'11절', text:'저가 내게 말하기를', chars:[0,2]},
-      {text:'네가 많은 백성과 나라와 방언과 임금에게', chars:[3]},
-      {text:'다시 예언하여야 하리라 하더라', chars:[2,0]}
+      {verseNum:'10절', text:'내가 천사의 손에서 작은 책을 갖다 먹어버리니', chars:[0,1,2], image:'little_book.png'},
+      {text:'내 입에는 꿀같이 다나', chars:[2,1], image:'honey_glow.png'},
+      {text:'먹은 후에 내 배에서는 쓰게 되더라', chars:[2,1], image:'bitter_cloud.png'},
+      {verseNum:'11절', text:'저가 내게 말하기를', chars:[0,2], image:'angel.png'},
+      {text:'네가 많은 백성과 나라와 방언과 임금에게', chars:[3], image:'nations_crowd.png'},
+      {text:'다시 예언하여야 하리라 하더라', chars:[2,0], image:'john.png'}
     ]
   },
   {
@@ -436,18 +468,18 @@ const VERSES = [
       {icon:'✝️',name:'그리스도'}
     ],
     chunks:[
-      {verseNum:'4절', text:'또 내가 보좌들을 보니 거기 앉은 자들이 있어', chars:[0,1]},
-      {text:'심판하는 권세를 받았더라', chars:[1]},
-      {text:'또 내가 보니 예수의 증거와 하나님의 말씀을 인하여', chars:[3]},
-      {text:'목 베임을 받은 자의 영혼들과', chars:[2]},
-      {text:'또 짐승과 그의 우상에게 경배하지도 아니하고', chars:[2]},
-      {text:'이마와 손에 그의 표를 받지도 아니한 자들이', chars:[2]},
-      {text:'살아서 그리스도로 더불어 천 년 동안 왕 노릇 하니', chars:[3]},
-      {verseNum:'5절', text:'(그 나머지 죽은 자들은 그 천 년이 차기까지 살지 못하더라) 이는 첫째 부활이라', chars:[3]},
-      {verseNum:'6절', text:'이 첫째 부활에 참예하는 자들은 복이 있고 거룩하도다', chars:[3]},
-      {text:'둘째 사망이 그들을 다스리는 권세가 없고', chars:[3]},
-      {text:'도리어 그들이 하나님과 그리스도의 제사장이 되어', chars:[3,0]},
-      {text:'천 년 동안 그리스도로 더불어 왕 노릇 하리라', chars:[3]}
+      {verseNum:'4절', text:'또 내가 보좌들을 보니 거기 앉은 자들이 있어', chars:[0,1], image:'thrones.png'},
+      {text:'심판하는 권세를 받았더라', chars:[1], image:'thrones.png'},
+      {text:'또 내가 보니 예수의 증거와 하나님의 말씀을 인하여', chars:[3], image:'scroll.png'},
+      {text:'목 베임을 받은 자의 영혼들과', chars:[2], image:'martyrs_souls.png'},
+      {text:'또 짐승과 그의 우상에게 경배하지도 아니하고', chars:[2], image:'beast_idol.png'},
+      {text:'이마와 손에 그의 표를 받지도 아니한 자들이', chars:[2], image:'beast_idol.png'},
+      {text:'살아서 그리스도로 더불어 천 년 동안 왕 노릇 하니', chars:[3], image:'crown_king.png'},
+      {verseNum:'5절', text:'(그 나머지 죽은 자들은 그 천 년이 차기까지 살지 못하더라) 이는 첫째 부활이라', chars:[3], image:'resurrection.png'},
+      {verseNum:'6절', text:'이 첫째 부활에 참예하는 자들은 복이 있고 거룩하도다', chars:[3], image:'resurrection.png'},
+      {text:'둘째 사망이 그들을 다스리는 권세가 없고', chars:[3], image:'death_blocked.png'},
+      {text:'도리어 그들이 하나님과 그리스도의 제사장이 되어', chars:[3,0], image:'priest_robe.png'},
+      {text:'천 년 동안 그리스도로 더불어 왕 노릇 하리라', chars:[3], image:'crown_king.png'}
     ]
   },
   {
@@ -459,12 +491,12 @@ const VERSES = [
       {icon:'🏙️',name:'거룩한성'}
     ],
     chunks:[
-      {verseNum:'18절', text:'내가 이 책의 예언의 말씀을 듣는 각인에게 증거하노니', chars:[0]},
-      {text:'만일 누구든지 이것들 외에 더하면', chars:[0]},
-      {text:'하나님이 이 책에 기록된 재앙들을 그에게 더하실 터이요', chars:[1]},
-      {verseNum:'19절', text:'만일 누구든지 이 책의 예언의 말씀에서 제하여 버리면', chars:[0]},
-      {text:'하나님이 이 책에 기록된 생명나무와 및 거룩한 성에 참예함을', chars:[2,3]},
-      {text:'제하여 버리시리라', chars:[0]}
+      {verseNum:'18절', text:'내가 이 책의 예언의 말씀을 듣는 각인에게 증거하노니', chars:[0], image:'open_book_glow.png'},
+      {text:'만일 누구든지 이것들 외에 더하면', chars:[0], image:'hand_adding.png'},
+      {text:'하나님이 이 책에 기록된 재앙들을 그에게 더하실 터이요', chars:[1], image:'lightning_strike.png'},
+      {verseNum:'19절', text:'만일 누구든지 이 책의 예언의 말씀에서 제하여 버리면', chars:[0], image:'hand_erasing.png'},
+      {text:'하나님이 이 책에 기록된 생명나무와 및 거룩한 성에 참예함을', chars:[2,3], image:'tree_of_life.png'},
+      {text:'제하여 버리시리라', chars:[0], image:'holy_city.png'}
     ]
   }
 ];
@@ -680,8 +712,10 @@ function nextS3() {
 ═══════════════════════════════════════ */
 function renderStage() {
   const area = document.getElementById('scroll-area');
-  document.getElementById('tts-bar').style.display = S.stageIdx===0 ? 'flex' : 'none';
-  document.getElementById('btn-prev').style.display = S.stageIdx===0 ? 'flex' : 'none';
+  const inStage1 = S.stageIdx===0;
+  document.getElementById('tts-bar').style.display = inStage1 ? 'flex' : 'none';
+  document.getElementById('btn-prev').style.display = inStage1 ? 'flex' : 'none';
+  document.getElementById('btn-replay').style.display = inStage1 ? 'flex' : 'none';
 
   if (S.stageIdx===0) renderStage1(area);
   else if (S.stageIdx===1) renderStage2(area);
@@ -691,20 +725,15 @@ function renderStage() {
 }
 
 /* ═══════════════════════════════════════
-   1단계 — 연상 + TTS
+   1단계 — 연상 + TTS (PNG 이미지 씬)
 ═══════════════════════════════════════ */
 function renderStage1(area) {
   const v = VERSES[S.verseIdx];
   const chunk = v.chunks[S.chunkIdx];
   const isLast = S.chunkIdx === v.chunks.length-1;
+  const isFirst = S.chunkIdx === 0;
 
-  const emojisHtml = v.chars.map((c,i) => {
-    const isActive = chunk.chars.includes(i);
-    return `<div class="emoji-item${isActive?' active':' dim'}">
-      <div class="emoji-icon">${c.icon}</div>
-      <div class="emoji-label">${c.name}</div>
-    </div>`;
-  }).join('');
+  const fallbackEmoji = chunk.chars.map(i => v.chars[i].icon).join(' ');
 
   // 전체 구절에서 현재 청크 강조
   const allText = v.chunks.map((ch,ci) => {
@@ -717,10 +746,14 @@ function renderStage1(area) {
     `<div class="pdot${i<S.chunkIdx?' done':i===S.chunkIdx?' current':''}"></div>`
   ).join('');
 
+  const imgHtml = chunk.image
+    ? `<img class="scene-img fade" id="scene-img" src="/images/${chunk.image}" alt="">`
+    : `<div class="scene-fallback fade" id="scene-img">${fallbackEmoji}</div>`;
+
   area.innerHTML = `
     <div class="scene-bg">
       <div class="scene-glow"></div>
-      <div class="emoji-row">${emojisHtml}</div>
+      <div class="scene-img-wrap">${imgHtml}</div>
       <div class="scene-chunk">
         ${chunk.verseNum?`<span class="vnum">${chunk.verseNum}</span>`:''}
         ${chunk.text}
@@ -736,9 +769,43 @@ function renderStage1(area) {
     </div>
     <div class="spacer"></div>`;
 
+  // 이미지 로드 실패 시 이모지 fallback
+  const imgEl = document.getElementById('scene-img');
+  if (imgEl && imgEl.tagName === 'IMG') {
+    imgEl.onerror = function() {
+      const wasFaded = this.classList.contains('fade');
+      this.outerHTML = `<div class="scene-fallback${wasFaded?' fade':''}" id="scene-img">${fallbackEmoji}</div>`;
+      const fb = document.getElementById('scene-img');
+      if (fb && wasFaded) {
+        requestAnimationFrame(() => requestAnimationFrame(() => fb.classList.remove('fade')));
+      }
+    };
+  }
+
+  // fade-in 트리거 (다음 프레임에 .fade 제거 → opacity 0 → 1 트랜지션)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const el = document.getElementById('scene-img');
+      if (el) el.classList.remove('fade');
+    });
+  });
+
   prepareTTS(chunk.text);
-  document.getElementById('btn-main').textContent = isLast ? '다음 단계 →' : '다음 구절 ▶';
+  document.getElementById('btn-prev').disabled = isFirst;
+  document.getElementById('btn-main').textContent = isLast ? '다음 단계 →' : '다음 ▶';
   document.getElementById('btn-main').className = isLast ? 'btn-main gold' : 'btn-main';
+}
+
+/* 청크 전환: 현재 이미지 fade-out 후 다음 청크 렌더 */
+function transitionStage1(updateFn) {
+  const el = document.getElementById('scene-img');
+  const doRender = () => { updateFn(); stopTTS(); renderStage(); };
+  if (el) {
+    el.classList.add('fade');
+    setTimeout(doRender, 200);
+  } else {
+    doRender();
+  }
 }
 
 /* ═══════════════════════════════════════
@@ -826,6 +893,19 @@ function renderStage3(area) {
   const v = VERSES[S.verseIdx];
   const chunk = v.chunks[S.s3_curChunkIdx];
 
+  // 현재 청크가 속한 절 그룹 찾기
+  const groups = getVerseGroups(v);
+  let curGroup = null;
+  let curIdxInGroup = -1;
+  for (const g of groups) {
+    const idx = g.chunks.indexOf(chunk);
+    if (idx >= 0) { curGroup = g; curIdxInGroup = idx; break; }
+  }
+
+  // 챕터 정보 (예: '계 1장' + '1절' → '계 1장 1절')
+  const chapterPart = v.title.split(' ').slice(0, 2).join(' ');
+  const fullRef = curGroup ? `${chapterPart} ${curGroup.verseNum}` : v.title;
+
   const emojisHtml = v.chars.map((c,i) => {
     const isActive = chunk.chars.includes(i);
     return `<div class="emoji-item${isActive?' blinking':' dim'}">
@@ -834,8 +914,19 @@ function renderStage3(area) {
     </div>`;
   }).join('');
 
-  // 빈칸 너비 = 청크 텍스트 글자수
-  const blankWidth = charWidth(chunk.text);
+  // 같은 절의 다른 청크들을 맥락으로 표시 (현재 청크는 빈칸)
+  const contextHtml = curGroup ? curGroup.chunks.map((ch, idx) => {
+    if (idx === curIdxInGroup) {
+      return `<div style="margin:8px 0">
+        <input class="chunk-blank-input" id="s3-input" type="text"
+          style="width:100%"
+          placeholder="${'_'.repeat(Math.min(ch.text.length, 20))}..."
+          autocomplete="off" autocorrect="off" spellcheck="false"
+          onkeydown="if(event.key==='Enter')onMain()">
+      </div>`;
+    }
+    return `<div style="font-size:13px;color:var(--text-muted);padding:5px 4px;line-height:1.7;border-left:2px solid var(--deep3);padding-left:10px;margin:4px 0">${ch.text}</div>`;
+  }).join('') : '';
 
   const progressHtml = `<div class="progress-info">${S.s3_correct}/${S.s3_target} 정답 완료</div>`;
 
@@ -843,12 +934,11 @@ function renderStage3(area) {
     <div class="card" style="margin-top:12px">
       <div class="emoji-row">${emojisHtml}</div>
       <div style="padding:4px 0">
-        ${chunk.verseNum?`<div style="margin-bottom:6px"><span class="vnum">${chunk.verseNum}</span></div>`:''}
-        <input class="chunk-blank-input" id="s3-input" type="text"
-          style="width:100%"
-          placeholder="${'_'.repeat(Math.min(chunk.text.length, 20))}..."
-          autocomplete="off" autocorrect="off" spellcheck="false"
-          onkeydown="if(event.key==='Enter')onMain()">
+        <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="vnum" style="font-size:12px;background:var(--purple);color:#fff;padding:3px 8px">${fullRef}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${curIdxInGroup+1}/${curGroup?.chunks.length||1} 청크</span>
+        </div>
+        ${contextHtml}
       </div>
     </div>
     ${progressHtml}
@@ -1180,8 +1270,7 @@ window.onMain = function() {
   if (S.stageIdx===0) {
     const v=VERSES[S.verseIdx];
     if (S.chunkIdx < v.chunks.length-1) {
-      S.chunkIdx++;
-      stopTTS(); renderStage();
+      transitionStage1(()=>{ S.chunkIdx++; });
     } else {
       S.stageUnlocked[2]=true;
       saveScore(VERSES[S.verseIdx].id,{stage1done:true});
@@ -1196,9 +1285,14 @@ window.onMain = function() {
 
 window.onPrev = function() {
   if (S.stageIdx===0 && S.chunkIdx>0) {
-    S.chunkIdx--;
-    stopTTS(); renderStage();
+    transitionStage1(()=>{ S.chunkIdx--; });
   }
+};
+
+window.onReplay = function() {
+  if (S.stageIdx!==0) return;
+  const v = VERSES[S.verseIdx];
+  prepareTTS(v.chunks[S.chunkIdx].text);
 };
 
 /* 초기화 */
