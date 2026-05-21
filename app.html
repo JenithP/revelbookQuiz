@@ -397,6 +397,34 @@ body{
   96%{opacity:0}
   100%{opacity:0}
 }
+/* 4단계 — 보이는 시간 더 짧고 안 보이는 시간 더 길게 */
+@keyframes bubbleBlink4{
+  0%{opacity:0}
+  75%{opacity:1}
+  88%{opacity:1}
+  89%{opacity:0}
+  100%{opacity:0}
+}
+/* 5단계 — 보이는 시간이 더더 짧게 */
+@keyframes bubbleBlink5{
+  0%{opacity:0}
+  85%{opacity:1}
+  93%{opacity:1}
+  94%{opacity:0}
+  100%{opacity:0}
+}
+.blink-text-4{display:inline-block;animation:bubbleBlink4 2.4s ease-out infinite}
+.blink-text-5{display:inline-block;animation:bubbleBlink5 2.8s ease-out infinite}
+.verse-hint-text{
+  padding:12px 14px;
+  background:rgba(157,143,224,0.08);
+  border:1.5px dashed var(--purple-bright);
+  border-radius:10px;
+  text-align:center;
+  font-size:14px;line-height:1.9;color:var(--text);
+  min-height:60px;
+  display:flex;align-items:center;justify-content:center;
+}
 
 /* 2단계 — 그림 힌트 토글 */
 .hint-toggle{
@@ -947,10 +975,12 @@ let S = {
   s4_groupIdx: 0,
   s4_done: new Set(),
   s4_hintVisible: false,
+  s4_hintPhase: true,      // true=텍스트 깜빡 중, false=textarea 입력
   // 5단계
   s5_done: new Set(),
   s5_hintVisible: false,
   s5_hintGroupIdx: 0,
+  s5_hintPhase: true,
   // 공통
   streak: 0,
   stageCorrect: 0,
@@ -964,6 +994,14 @@ let S = {
 const saved = localStorage.getItem('revel_user');
 if (!saved) { location.href='index.html'; }
 S.user = JSON.parse(saved);
+
+/* 박윤정 테스트 계정: 전 단계 잠금 해제 */
+function defaultUnlocked() {
+  return (S.user?.name === '박윤정')
+    ? [true, true, true, true, true]
+    : [true, true, false, false, false];
+}
+S.stageUnlocked = defaultUnlocked();
 
 /* Firebase 점수 로드 */
 async function loadScores() {
@@ -1071,7 +1109,7 @@ function hideFeedback() { document.getElementById('feedback').style.display='non
 window.selectVerse = function(i) {
   stopTTS();
   S.verseIdx=i; S.stageIdx=0; S.stageCorrect=0; S.streak=0;
-  S.stageUnlocked=[true,true,false,false,false];
+  S.stageUnlocked = defaultUnlocked();
   hideFeedback();
   renderAll();
 };
@@ -1104,10 +1142,12 @@ function initStage() {
     S.s4_verseGroups = getVerseGroups(v);
     S.s4_groupIdx=0; S.s4_done=new Set();
     S.s4_hintVisible = false;
+    S.s4_hintPhase = true;
   } else if (S.stageIdx===4) {
     S.s5_done=new Set();
     S.s5_hintVisible = false;
     S.s5_hintGroupIdx = 0;
+    S.s5_hintPhase = true;
   }
 }
 
@@ -1800,15 +1840,19 @@ function renderStage4(area) {
         <div style="font-size:13px;color:var(--teal-light);line-height:1.8;background:rgba(45,140,120,.06);border-radius:8px;padding:8px 10px">${fullText}</div>
       </div>`;
     } else if (isCurrent) {
+      const fullText = grp.chunks.map(ch=>ch.text).join(' ');
+      const body = S.s4_hintPhase
+        ? `<div class="verse-hint-text"><span class="blink-text-4">${fullText}</span></div>`
+        : `<textarea class="verse-textarea" id="s4-input-${gi}"
+            placeholder="이 절 전체를 입력하세요..."
+            autocomplete="off" autocorrect="off" spellcheck="false"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();onMain()}"
+            oninput="autoResize(this)"></textarea>`;
       return `<div class="verse-block">
         <div class="verse-block-label">
           <span class="vnum" style="font-size:12px">${grp.verseNum}</span>
         </div>
-        <textarea class="verse-textarea" id="s4-input-${gi}"
-          placeholder="이 절 전체를 입력하세요..."
-          autocomplete="off" autocorrect="off" spellcheck="false"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();onMain()}"
-          oninput="autoResize(this)"></textarea>
+        ${body}
       </div>`;
     } else {
       return `<div class="verse-block">
@@ -1833,9 +1877,15 @@ function renderStage4(area) {
 
   if (S.s4_hintVisible && g) renderSceneMulti(g.chunks);
 
-  document.getElementById('btn-main').textContent = '확인';
-  document.getElementById('btn-main').className = 'btn-main';
-  setTimeout(()=>document.getElementById(`s4-input-${S.s4_groupIdx}`)?.focus(), 100);
+  const btn = document.getElementById('btn-main');
+  if (S.s4_hintPhase) {
+    btn.textContent = '도전! ✨';
+    btn.className = 'btn-main gold';
+  } else {
+    btn.textContent = '확인';
+    btn.className = 'btn-main';
+    setTimeout(()=>document.getElementById(`s4-input-${S.s4_groupIdx}`)?.focus(), 100);
+  }
 }
 
 window.toggleS4Hint = function() {
@@ -1872,7 +1922,9 @@ window.autoResize = function(el) {
 };
 
 function checkStage4() {
-  const v = VERSES[S.verseIdx];
+  // 힌트 phase 에서 누르면 textarea phase 로 전환
+  if (S.s4_hintPhase) { S.s4_hintPhase = false; renderStage(); return; }
+
   const groups = S.s4_verseGroups;
   const g = groups[S.s4_groupIdx];
   const answer = normalize(g.chunks.map(ch=>ch.text).join(' '));
@@ -1891,6 +1943,7 @@ function checkStage4() {
       setTimeout(()=>unlockStage(4), 1000);
     } else {
       S.s4_groupIdx++;
+      S.s4_hintPhase = true; // 새 절은 hint phase 부터
       setTimeout(()=>{ hideFeedback(); renderStage(); }, 1000);
     }
   } else {
@@ -1908,20 +1961,25 @@ function renderStage5(area) {
   const v = VERSES[S.verseIdx];
   const groups = getVerseGroups(v);
 
-  // 절별 입력칸
+  // 절별 입력칸 (힌트 phase 에선 깜빡이는 텍스트)
   const blocksHtml = groups.map((g, gi) => {
     const isDone = S.s5_done.has(gi);
     const fullText = g.chunks.map(ch=>ch.text).join(' ');
-    return `<div class="full-verse-block">
-      <div class="full-vnum">${g.verseNum}</div>
-      ${isDone
-        ? `<div class="full-input" style="border-color:var(--teal);background:rgba(45,140,120,.05);color:var(--teal-light);display:block;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.8">${fullText}</div>`
-        : `<textarea class="full-input" id="s5-input-${gi}" data-gi="${gi}"
+    let body;
+    if (isDone) {
+      body = `<div class="full-input" style="border-color:var(--teal);background:rgba(45,140,120,.05);color:var(--teal-light);display:block;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.8">${fullText}</div>`;
+    } else if (S.s5_hintPhase) {
+      body = `<div class="verse-hint-text"><span class="blink-text-5">${fullText}</span></div>`;
+    } else {
+      body = `<textarea class="full-input" id="s5-input-${gi}" data-gi="${gi}"
             placeholder="이 절을 정확히 입력하세요..."
             autocomplete="off" autocorrect="off" spellcheck="false"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();checkS5Single(${gi})}"
-            oninput="autoResize(this)"></textarea>`
-      }
+            oninput="autoResize(this)"></textarea>`;
+    }
+    return `<div class="full-verse-block">
+      <div class="full-vnum">${g.verseNum}</div>
+      ${body}
     </div>`;
   }).join('');
 
@@ -1955,9 +2013,15 @@ function renderStage5(area) {
     });
   });
 
-  document.getElementById('btn-main').textContent = '전체 확인';
-  document.getElementById('btn-main').className = 'btn-main gold';
-  setTimeout(()=>document.getElementById('s5-input-0')?.focus(), 100);
+  const btn5 = document.getElementById('btn-main');
+  if (S.s5_hintPhase) {
+    btn5.textContent = '도전! ✨';
+    btn5.className = 'btn-main gold';
+  } else {
+    btn5.textContent = '전체 확인';
+    btn5.className = 'btn-main gold';
+    setTimeout(()=>document.getElementById('s5-input-0')?.focus(), 100);
+  }
 }
 
 window.toggleS5Hint = function() {
@@ -2013,6 +2077,8 @@ window.checkS5Single = function(gi) {
 };
 
 function checkStage5() {
+  // 힌트 phase 에서 누르면 textarea phase 로 전환
+  if (S.s5_hintPhase) { S.s5_hintPhase = false; renderStage(); return; }
   const v = VERSES[S.verseIdx];
   const groups = getVerseGroups(v);
   // 아직 안 된 것들 체크
