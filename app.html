@@ -378,14 +378,39 @@ body{
   margin:0 2px;
   transition:border-color .2s, background .2s;
 }
-.word-bubble.blinking{animation:bubbleBlink 0.8s ease-in-out infinite}
 .word-bubble.wrong{
   border-color:var(--error);
   background:rgba(224,112,112,0.15);
 }
+.bubble-text{display:inline-block}
+.word-bubble.blinking .bubble-text{
+  animation:bubbleBlink 2s ease-out infinite;
+}
 @keyframes bubbleBlink{
-  0%,100%{opacity:1;background:rgba(157,143,224,0.25)}
-  50%{opacity:0.3;background:rgba(157,143,224,0.05)}
+  0%{opacity:0}
+  60%{opacity:1}
+  95%{opacity:1}
+  96%{opacity:0}
+  100%{opacity:0}
+}
+
+/* 2단계 — 절 그룹 (전체 장 표시) */
+.s2-verse-group{
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--card-border);
+}
+.s2-verse-group:last-child{
+  margin-bottom:0;
+  padding-bottom:0;
+  border-bottom:none;
+}
+.s2-vnum{
+  font-size:12px;font-weight:600;color:var(--gold);
+  margin-bottom:6px;
+}
+.s2-verse-text{
+  font-size:14px;line-height:2.4;color:var(--text);
 }
 .bubble-input{
   border:none;background:transparent;outline:none;
@@ -879,12 +904,9 @@ let S = {
   stageIdx: 0,
   // 1단계
   chunkIdx: 0,
-  s1_lastVerseIdx: -1,
   ttsUtter: null, ttsPlaying: false,
-  // 2단계
-  s2_queue: [],            // 남은 청크 인덱스 (셔플)
-  s2_curChunkIdx: -1,      // 현재 청크
-  s2_blankIndices: [],     // 현재 빈칸 단어 인덱스들
+  // 2단계 — 전체 장(chapter) 한 번에 표시
+  s2_blankIndices: [],     // 현재 빈칸들 [{ci, wi}, ...]
   s2_roundCorrect: 0,      // 이번 라운드 맞춘 빈칸 수
   s2_totalRounds: 0,       // 완료한 라운드 수
   s2_targetRounds: 3,      // 목표 라운드 수
@@ -1041,10 +1063,8 @@ function initStage() {
   const v = VERSES[S.verseIdx];
   if (S.stageIdx===1) {
     clearS2Timer();
-    S.s2_queue = shuffle(v.chunks.map((_,i)=>i));
     S.s2_totalRounds = 0;
     S.s2_targetRounds = 3;
-    S.s2_curChunkIdx = -1;
     S.s2_blankIndices = [];
     nextS2();
   } else if (S.stageIdx===2) {
@@ -1062,14 +1082,17 @@ function initStage() {
 
 function nextS2() {
   const v = VERSES[S.verseIdx];
-  if (S.s2_queue.length===0) S.s2_queue = shuffle(v.chunks.map((_,i)=>i));
-  S.s2_curChunkIdx = S.s2_queue.shift();
-  const chunk = v.chunks[S.s2_curChunkIdx];
-  const words = chunk.text.split(' ');
-  // 랜덤 2~3개 단어 선택 (단어 수가 적으면 그만큼)
-  const desired = 2 + Math.floor(Math.random()*2); // 2 or 3
-  const count = Math.min(words.length, desired);
-  S.s2_blankIndices = shuffle(words.map((_,i)=>i)).slice(0, count).sort((a,b)=>a-b);
+  // 전체 장의 모든 (청크, 단어) 좌표를 모음
+  const allWords = [];
+  v.chunks.forEach((ch, ci) => {
+    ch.text.split(' ').forEach((_, wi) => {
+      allWords.push({ ci, wi });
+    });
+  });
+  // 4~6개 랜덤 선택 (단어가 적으면 그만큼)
+  const desired = 4 + Math.floor(Math.random()*3); // 4, 5 or 6
+  const count = Math.min(allWords.length, desired);
+  S.s2_blankIndices = shuffle(allWords).slice(0, count);
   S.s2_roundCorrect = 0;
   S.s2_hintPhase = true;
 }
@@ -1108,6 +1131,7 @@ function renderStage() {
 
 /* ═══════════════════════════════════════
    1단계 — PNG 레이어 애니메이션 씬 + TTS
+   청크 이동 시 이전 액터 완전 제거 후 새 씬 등장
 ═══════════════════════════════════════ */
 function renderStage1(area) {
   const v = VERSES[S.verseIdx];
@@ -1115,41 +1139,27 @@ function renderStage1(area) {
   const isLast = S.chunkIdx === v.chunks.length-1;
   const isFirst = S.chunkIdx === 0;
 
-  // 전체 구절에서 현재 청크 강조
   const allText = v.chunks.map((ch,ci) => {
     const cls = ci===S.chunkIdx ? 'chunk-highlight' : 'chunk-dim';
     return `${ch.verseNum?`<span class="vnum">${ch.verseNum}</span>`:''}<span class="${cls}">${ch.text}</span>`;
   }).join(' ');
 
-  // 진행 점 표시
   const dotsHtml = v.chunks.map((_,i) =>
     `<div class="pdot${i<S.chunkIdx?' done':i===S.chunkIdx?' current':''}"></div>`
   ).join('');
 
-  // 같은 절 내 청크 이동: scene-stage 보존 (이전 액터 dim 유지)
-  // 다른 절 / 처음 진입: 전체 재구성
-  const existingStage = document.getElementById('scene-stage');
-  const sameVerse = !!existingStage && S.s1_lastVerseIdx === S.verseIdx;
+  area.innerHTML = `
+    <div class="scene-stage" id="scene-stage"></div>
+    <div class="card" style="margin-top:10px">
+      <div class="card-label">전체 구절</div>
+      <div style="font-size:13px;line-height:2;color:var(--text-dim)">${allText}</div>
+    </div>
+    <div class="progress-info">
+      ${S.chunkIdx+1} / ${v.chunks.length}
+      <div class="progress-dots">${dotsHtml}</div>
+    </div>
+    <div class="spacer"></div>`;
 
-  if (!sameVerse) {
-    area.innerHTML = `
-      <div class="scene-stage" id="scene-stage"></div>
-      <div class="card" style="margin-top:10px">
-        <div class="card-label">전체 구절</div>
-        <div id="s1-full-text" style="font-size:13px;line-height:2;color:var(--text-dim)">${allText}</div>
-      </div>
-      <div class="progress-info">
-        <span id="s1-progress-text">${S.chunkIdx+1} / ${v.chunks.length}</span>
-        <div class="progress-dots" id="s1-progress-dots">${dotsHtml}</div>
-      </div>
-      <div class="spacer"></div>`;
-  } else {
-    document.getElementById('s1-full-text').innerHTML = allText;
-    document.getElementById('s1-progress-text').textContent = `${S.chunkIdx+1} / ${v.chunks.length}`;
-    document.getElementById('s1-progress-dots').innerHTML = dotsHtml;
-  }
-
-  S.s1_lastVerseIdx = S.verseIdx;
   renderScene(chunk);
 
   prepareTTS(chunk.text);
@@ -1158,52 +1168,26 @@ function renderStage1(area) {
   document.getElementById('btn-main').className = isLast ? 'btn-main gold' : 'btn-main';
 }
 
-/* PNG 레이어 씬 렌더 — 이전 액터는 dim, 새 액터는 애니메이션 등장
-   moveTo 타입은 이전 청크의 같은 이미지를 새 위치로 이동 */
+/* PNG 레이어 씬 렌더 — 매 청크마다 stage 초기화 후 새 액터 애니메이션 등장 */
 function renderScene(chunk) {
   const stage = document.getElementById('scene-stage');
   if (!stage) return;
 
-  // 이전 액터들 dim 처리 (animation forwards 를 이기기 위해 !important)
-  const existing = Array.from(stage.querySelectorAll('.scene-actor'));
-  existing.forEach(el => {
-    el.style.setProperty('opacity', '0.2', 'important');
-    el.style.setProperty('filter', 'grayscale(0.5)', 'important');
-    el.dataset.dimmed = '1';
-  });
+  stage.innerHTML = ''; // 이전 청크 액터 완전 제거
 
   if (!chunk.scene) return;
 
   chunk.scene.forEach(actor => {
-    // moveTo: 이전 청크에 같은 이미지가 있으면 위치만 이동
-    if (actor.anim === 'moveTo') {
-      const target = existing.find(el => el.dataset.img === actor.img && !el.dataset.moved);
-      if (target) {
-        target.dataset.moved = '1';
-        delete target.dataset.dimmed;
-        // dim 해제 + 새 위치로 transition
-        target.style.removeProperty('opacity');
-        target.style.removeProperty('filter');
-        target.style.transitionDelay = (actor.delay || 0) + 's';
-        target.style.left = actor.x;
-        target.style.top = actor.y;
-        target.style.width = actor.size + 'px';
-        target.style.height = actor.size + 'px';
-        return;
-      }
-      // 해당 이미지가 없으면 fadeUp 으로 fallback
-    }
-
     const img = document.createElement('img');
     img.className = 'scene-actor';
     img.src = `/images/${actor.img}`;
     img.alt = '';
-    img.dataset.img = actor.img;
     img.style.left = actor.x;
     img.style.top = actor.y;
     img.style.width = actor.size + 'px';
     img.style.height = actor.size + 'px';
     img.style.opacity = '0';
+    // moveTo는 이전 액터가 없으므로 fadeUp 으로 fallback
     const animName = (actor.anim === 'moveTo') ? 'fadeUp' : actor.anim;
     img.style.animation = `${animName} 0.6s ease ${actor.delay || 0}s forwards`;
     img.onerror = () => { img.style.display = 'none'; };
@@ -1212,36 +1196,42 @@ function renderScene(chunk) {
 }
 
 /* ═══════════════════════════════════════
-   2단계 — 청크 이미지 + 타원형 말풍선 빈칸
-   힌트 5초 → 입력 phase, 모두 정답 → 라운드 완료
+   2단계 — 전체 장(chapter) 한 번에 표시
+   힌트 5초간 빈칸 자리에 단어가 fade-in/sudden-disappear 반복
+   → 입력 phase 전환 → 모두 정답 → 라운드 완료
    3 라운드 완료 시 3단계 잠금 해제
 ═══════════════════════════════════════ */
 function renderStage2(area) {
   clearS2Timer();
   const v = VERSES[S.verseIdx];
-  const chunk = v.chunks[S.s2_curChunkIdx];
-  const words = chunk.text.split(' ');
-  const blankSet = new Set(S.s2_blankIndices);
-  const fallbackEmoji = chunk.chars.map(i => v.chars[i].icon).join(' ');
-  const mainImg = chunk.scene?.[0]?.img || chunk.image;
+  const groups = getVerseGroups(v);
+  const blankSet = new Set(S.s2_blankIndices.map(b => `${b.ci}-${b.wi}`));
 
-  const imgHtml = mainImg
-    ? `<img class="scene-img" id="s2-img" src="/images/${mainImg}" alt="">`
-    : `<div class="scene-fallback">${fallbackEmoji}</div>`;
+  // 절(verseNum) 단위로 묶어서 표시
+  const groupsHtml = groups.map(g => {
+    const versesText = g.chunks.map(ch => {
+      const ci = v.chunks.indexOf(ch);
+      const words = ch.text.split(' ');
+      return words.map((w, wi) => {
+        if (blankSet.has(`${ci}-${wi}`)) {
+          if (S.s2_hintPhase) {
+            return `<span class="word-bubble blinking" data-ci="${ci}" data-wi="${wi}">` +
+              `<span class="bubble-text">${w}</span></span>`;
+          }
+          return `<span class="word-bubble" data-ci="${ci}" data-wi="${wi}">` +
+            `<input class="bubble-input" type="text" data-ci="${ci}" data-wi="${wi}" ` +
+            `style="width:${charWidth(w)}" ` +
+            `autocomplete="off" autocorrect="off" spellcheck="false"></span>`;
+        }
+        return `<span>${w}</span>`;
+      }).join(' ');
+    }).join(' ');
 
-  // 청크 텍스트 — 빈칸 단어는 타원형 말풍선으로
-  const lineHtml = words.map((w, i) => {
-    if (blankSet.has(i)) {
-      if (S.s2_hintPhase) {
-        return `<span class="word-bubble blinking" data-idx="${i}" data-word="${w}">${w}</span>`;
-      }
-      return `<span class="word-bubble" data-idx="${i}" data-word="${w}">` +
-        `<input class="bubble-input" type="text" data-idx="${i}" ` +
-        `style="width:${charWidth(w)}" ` +
-        `autocomplete="off" autocorrect="off" spellcheck="false"></span>`;
-    }
-    return `<span>${w}</span>`;
-  }).join(' ');
+    return `<div class="s2-verse-group">
+      <div class="s2-vnum">${g.verseNum}</div>
+      <div class="s2-verse-text">${versesText}</div>
+    </div>`;
+  }).join('');
 
   // 라운드 진행 점
   let dotsHtml = '';
@@ -1257,13 +1247,8 @@ function renderStage2(area) {
     : `<div class="s2-guide input-mode" id="s2-guide">빈칸을 채워주세요 ✏️</div>`;
 
   area.innerHTML = `
-    <div class="scene-bg">
-      <div class="scene-glow"></div>
-      <div class="scene-img-wrap">${imgHtml}</div>
-      <div class="scene-chunk">
-        ${chunk.verseNum?`<span class="vnum">${chunk.verseNum}</span>`:''}
-        ${lineHtml}
-      </div>
+    <div class="card" style="margin-top:12px">
+      ${groupsHtml}
     </div>
     ${guideHtml}
     <div class="progress-info">
@@ -1271,14 +1256,6 @@ function renderStage2(area) {
       <div class="round-dots">${dotsHtml}</div>
     </div>
     <div class="spacer"></div>`;
-
-  // 이미지 로드 실패 시 이모지 fallback
-  const imgEl = document.getElementById('s2-img');
-  if (imgEl && imgEl.tagName === 'IMG') {
-    imgEl.onerror = function() {
-      this.outerHTML = `<div class="scene-fallback">${fallbackEmoji}</div>`;
-    };
-  }
 
   const btn = document.getElementById('btn-main');
   if (S.s2_hintPhase) {
@@ -1312,27 +1289,24 @@ function startS2Countdown() {
 function switchToInputPhase() {
   S.s2_hintPhase = false;
   const v = VERSES[S.verseIdx];
-  const chunk = v.chunks[S.s2_curChunkIdx];
-  const words = chunk.text.split(' ');
 
-  // 각 .word-bubble 안의 텍스트 → input으로 교체
+  // 각 .word-bubble 안의 텍스트 → input으로 교체 (ci/wi 기반)
   document.querySelectorAll('.word-bubble').forEach(bubble => {
-    const idx = parseInt(bubble.dataset.idx, 10);
-    const word = words[idx];
+    const ci = parseInt(bubble.dataset.ci, 10);
+    const wi = parseInt(bubble.dataset.wi, 10);
+    const word = v.chunks[ci].text.split(' ')[wi];
     bubble.classList.remove('blinking');
-    bubble.innerHTML = `<input class="bubble-input" type="text" data-idx="${idx}" ` +
+    bubble.innerHTML = `<input class="bubble-input" type="text" data-ci="${ci}" data-wi="${wi}" ` +
       `style="width:${charWidth(word)}" ` +
       `autocomplete="off" autocorrect="off" spellcheck="false">`;
   });
 
-  // 안내 텍스트 교체
   const guideEl = document.getElementById('s2-guide');
   if (guideEl) {
     guideEl.textContent = '빈칸을 채워주세요 ✏️';
     guideEl.classList.add('input-mode');
   }
 
-  // 확인 버튼 표시
   const btn = document.getElementById('btn-main');
   btn.style.display = '';
   btn.textContent = '확인';
@@ -1368,8 +1342,6 @@ function showReviewBanner() {
 function checkStage2() {
   if (S.s2_hintPhase) return; // 힌트 phase 중에는 검사 안 함
   const v = VERSES[S.verseIdx];
-  const chunk = v.chunks[S.s2_curChunkIdx];
-  const words = chunk.text.split(' ');
   const inputs = Array.from(document.querySelectorAll('.bubble-input'));
   if (inputs.length === 0) return;
 
@@ -1378,8 +1350,9 @@ function checkStage2() {
   inputs.forEach(input => {
     const bubble = input.closest('.word-bubble');
     if (input.disabled) return; // 이전에 정답 처리됨
-    const idx = parseInt(input.dataset.idx, 10);
-    const answer = words[idx];
+    const ci = parseInt(input.dataset.ci, 10);
+    const wi = parseInt(input.dataset.wi, 10);
+    const answer = v.chunks[ci].text.split(' ')[wi];
     const val = normalize(input.value);
     if (val === answer) {
       input.classList.add('correct');
