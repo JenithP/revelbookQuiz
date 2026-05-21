@@ -1398,16 +1398,13 @@ function setupS2InputHandlers() {
         bubble?.classList.remove('wrong');
       }
       // 정확히 일치 → 즉시 정답 처리 + 다음 빈칸으로 자동 이동
+      // (자동 라운드 완료는 하지 않음 — 사용자가 [확인] 을 눌러야 함)
       if (val === expected) {
         input.classList.add('correct');
         input.disabled = true;
         bubble?.classList.add('correct');
-        if (inputs.every(n => n.disabled)) {
-          completeS2Round();
-        } else {
-          const next = inputs.slice(i + 1).find(n => !n.disabled);
-          next?.focus();
-        }
+        const next = inputs.slice(i + 1).find(n => !n.disabled);
+        next?.focus();
       }
     });
 
@@ -1659,16 +1656,13 @@ function setupS3InputHandlers() {
         input.classList.remove('wrong');
         bubble?.classList.remove('wrong');
       }
+      // (자동 진행 안 함 — 사용자가 [확인] 을 눌러야 다음 청크로)
       if (val === expected) {
         input.classList.add('correct');
         input.disabled = true;
         bubble?.classList.add('correct');
-        if (inputs.every(n => n.disabled)) {
-          completeS3Chunk();
-        } else {
-          const next = inputs.slice(i + 1).find(n => !n.disabled);
-          next?.focus();
-        }
+        const next = inputs.slice(i + 1).find(n => !n.disabled);
+        next?.focus();
       }
     });
 
