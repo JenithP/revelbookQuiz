@@ -1102,7 +1102,9 @@ function nextS2() {
   const v = VERSES[S.verseIdx];
   const groups = getVerseGroups(v);
   const blanks = [];
-  // 각 절(verseNum 그룹)마다 2~3개씩 빈칸 추출
+  // 라운드가 진행될수록 각 절마다 +2 (라운드1:2, 라운드2:4, 라운드3:6)
+  // 짧은 절은 보유 단어 수까지만 (자연스럽게 하나만 늘기도 함)
+  const desired = 2 + S.s2_totalRounds * 2;
   groups.forEach(g => {
     const groupWords = [];
     g.chunks.forEach(ch => {
@@ -1111,7 +1113,6 @@ function nextS2() {
         groupWords.push({ ci, wi });
       });
     });
-    const desired = 2 + Math.floor(Math.random()*2); // 2 또는 3
     const count = Math.min(groupWords.length, desired);
     blanks.push(...shuffle(groupWords).slice(0, count));
   });
