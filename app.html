@@ -946,8 +946,11 @@ let S = {
   s4_verseGroups: [],
   s4_groupIdx: 0,
   s4_done: new Set(),
+  s4_hintVisible: false,
   // 5단계
   s5_done: new Set(),
+  s5_hintVisible: false,
+  s5_hintGroupIdx: 0,
   // 공통
   streak: 0,
   stageCorrect: 0,
@@ -1100,8 +1103,11 @@ function initStage() {
   } else if (S.stageIdx===3) {
     S.s4_verseGroups = getVerseGroups(v);
     S.s4_groupIdx=0; S.s4_done=new Set();
+    S.s4_hintVisible = false;
   } else if (S.stageIdx===4) {
     S.s5_done=new Set();
+    S.s5_hintVisible = false;
+    S.s5_hintGroupIdx = 0;
   }
 }
 
@@ -1193,6 +1199,39 @@ function renderStage1(area) {
   document.getElementById('btn-prev').disabled = isFirst;
   document.getElementById('btn-main').textContent = isLast ? '다음 단계 →' : '다음 ▶';
   document.getElementById('btn-main').className = isLast ? 'btn-main gold' : 'btn-main';
+}
+
+/* 여러 청크의 씬을 하나로 합쳐 렌더 (4·5단계 그림 힌트)
+   같은 이미지는 첫 등장 좌표로 1회만 표시해 화면이 덜 복잡하게 */
+function renderSceneMulti(chunks) {
+  const stage = document.getElementById('scene-stage');
+  if (!stage) return;
+  stage.innerHTML = '';
+  const seen = new Set();
+  const queue = [];
+  chunks.forEach(chunk => {
+    if (!chunk.scene) return;
+    chunk.scene.forEach(actor => {
+      if (seen.has(actor.img)) return;
+      seen.add(actor.img);
+      queue.push(actor);
+    });
+  });
+  queue.forEach((actor, i) => {
+    const img = document.createElement('img');
+    img.className = 'scene-actor';
+    img.src = `/images/${actor.img}`;
+    img.alt = '';
+    img.style.left = actor.x;
+    img.style.top = actor.y;
+    img.style.width = actor.size + 'px';
+    img.style.height = actor.size + 'px';
+    img.style.opacity = '0';
+    const animName = (actor.anim === 'moveTo') ? 'fadeUp' : actor.anim;
+    img.style.animation = `${animName} 0.5s ease ${i * 0.12}s forwards`;
+    img.onerror = () => { img.style.display = 'none'; };
+    stage.appendChild(img);
+  });
 }
 
 /* PNG 레이어 씬 렌더 — 매 청크마다 stage 초기화 후 새 액터 애니메이션 등장 */
@@ -1520,14 +1559,6 @@ function renderStage3(area) {
   const chapterPart = v.title.split(' ').slice(0, 2).join(' ');
   const fullRef = curGroup ? `${chapterPart} ${curGroup.verseNum}` : v.title;
 
-  const emojisHtml = v.chars.map((c,i) => {
-    const isActive = chunk.chars.includes(i);
-    return `<div class="emoji-item${isActive?' blinking':' dim'}">
-      <div class="emoji-icon">${c.icon}</div>
-      <div class="emoji-label">${c.name}</div>
-    </div>`;
-  }).join('');
-
   // 같은 절의 다른 청크들은 맥락으로, 현재 청크는 단어 단위 말풍선
   // 힌트 phase: 단어가 깜빡이며 보임 / 입력 phase: 빈칸 input
   const contextHtml = curGroup ? curGroup.chunks.map((ch, idx) => {
@@ -1563,7 +1594,6 @@ function renderStage3(area) {
     ${sceneHtml}
     ${toggleHtml}
     <div class="card" style="margin-top:8px">
-      <div class="emoji-row">${emojisHtml}</div>
       <div style="padding:4px 0">
         <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span class="vnum" style="font-size:12px;background:var(--purple);color:#fff;padding:3px 8px">${fullRef}</span>
@@ -1751,43 +1781,21 @@ function checkStage3() {
 }
 
 /* ═══════════════════════════════════════
-   4단계 — 절 단위, 이모지 표시
+   4단계 — 절 단위 전체 입력 + 그림 힌트 토글
 ═══════════════════════════════════════ */
 function renderStage4(area) {
-  const v = VERSES[S.verseIdx];
   const groups = S.s4_verseGroups;
   const g = groups[S.s4_groupIdx];
 
-  // 이 절에 쓰이는 이모지 모음 (중복 제거, 순서 유지)
-  const charIdxs = [];
-  g.chunks.forEach(ch => ch.chars.forEach(ci => { if(!charIdxs.includes(ci)) charIdxs.push(ci); }));
-
-  const emojisHtml = charIdxs.map(ci => {
-    const c = v.chars[ci];
-    const isDone = S.s4_done.has(S.s4_groupIdx);
-    return `<div class="emoji-item${isDone?' correct':' blinking'}">
-      <div class="emoji-icon">${c.icon}</div>
-      <div class="emoji-label">${c.name}</div>
-    </div>`;
-  }).join('');
-
-  // 이미 완료된 절은 텍스트 보여주고, 현재 절만 입력창
+  // 이미 완료된 절은 텍스트, 현재 절은 textarea, 잠긴 절은 placeholder
   const groupsHtml = groups.map((grp, gi) => {
     const isDone = S.s4_done.has(gi);
     const isCurrent = gi === S.s4_groupIdx;
-    const grpCharIdxs = [];
-    grp.chunks.forEach(ch => ch.chars.forEach(ci => { if(!grpCharIdxs.includes(ci)) grpCharIdxs.push(ci); }));
-    const miniEmojis = grpCharIdxs.map(ci => {
-      const c = v.chars[ci];
-      return `<span class="mini-emoji${isDone?' correct':isCurrent?' blinking':''}">${c.icon}</span>`;
-    }).join('');
-
     if (isDone) {
       const fullText = grp.chunks.map(ch=>ch.text).join(' ');
       return `<div class="verse-block">
         <div class="verse-block-label">
           <span class="vnum" style="font-size:12px">${grp.verseNum}</span>
-          <div class="verse-block-emojis">${miniEmojis}</div>
         </div>
         <div style="font-size:13px;color:var(--teal-light);line-height:1.8;background:rgba(45,140,120,.06);border-radius:8px;padding:8px 10px">${fullText}</div>
       </div>`;
@@ -1795,7 +1803,6 @@ function renderStage4(area) {
       return `<div class="verse-block">
         <div class="verse-block-label">
           <span class="vnum" style="font-size:12px">${grp.verseNum}</span>
-          <div class="verse-block-emojis">${miniEmojis}</div>
         </div>
         <textarea class="verse-textarea" id="s4-input-${gi}"
           placeholder="이 절 전체를 입력하세요..."
@@ -1807,25 +1814,57 @@ function renderStage4(area) {
       return `<div class="verse-block">
         <div class="verse-block-label">
           <span class="vnum" style="font-size:12px;opacity:.4">${grp.verseNum}</span>
-          <div class="verse-block-emojis">${grpCharIdxs.map(ci=>`<span class="mini-emoji" style="opacity:.2">${v.chars[ci].icon}</span>`).join('')}</div>
         </div>
         <div style="font-size:13px;color:var(--text-muted);background:var(--deep3);border-radius:8px;padding:8px 10px">아직 잠김</div>
       </div>`;
     }
   }).join('');
 
+  const sceneHtml = S.s4_hintVisible
+    ? `<div class="scene-stage" id="scene-stage"></div>`
+    : '';
+  const toggleHtml = `<button class="hint-toggle${S.s4_hintVisible?' on':''}" type="button" onclick="toggleS4Hint()">${S.s4_hintVisible?'🙈 그림 가리기':'💡 그림 힌트 보기'}</button>`;
+
   area.innerHTML = `
-    <div class="card" style="margin-top:12px">
-      <div class="card-label">${g.verseNum} 이모지</div>
-      <div class="emoji-row" style="padding:8px 0">${emojisHtml}</div>
-    </div>
-    <div class="card">${groupsHtml}</div>
+    ${sceneHtml}
+    ${toggleHtml}
+    <div class="card" style="margin-top:8px">${groupsHtml}</div>
     <div class="spacer"></div>`;
+
+  if (S.s4_hintVisible && g) renderSceneMulti(g.chunks);
 
   document.getElementById('btn-main').textContent = '확인';
   document.getElementById('btn-main').className = 'btn-main';
   setTimeout(()=>document.getElementById(`s4-input-${S.s4_groupIdx}`)?.focus(), 100);
 }
+
+window.toggleS4Hint = function() {
+  S.s4_hintVisible = !S.s4_hintVisible;
+  const toggleBtn = document.querySelector('.hint-toggle');
+  if (S.s4_hintVisible) {
+    let stage = document.getElementById('scene-stage');
+    if (!stage) {
+      stage = document.createElement('div');
+      stage.className = 'scene-stage';
+      stage.id = 'scene-stage';
+      const area = document.getElementById('scroll-area');
+      area.insertBefore(stage, area.firstChild);
+    }
+    const g = S.s4_verseGroups[S.s4_groupIdx];
+    if (g) renderSceneMulti(g.chunks);
+    if (toggleBtn) {
+      toggleBtn.textContent = '🙈 그림 가리기';
+      toggleBtn.classList.add('on');
+    }
+  } else {
+    const stage = document.getElementById('scene-stage');
+    if (stage) stage.remove();
+    if (toggleBtn) {
+      toggleBtn.textContent = '💡 그림 힌트 보기';
+      toggleBtn.classList.remove('on');
+    }
+  }
+};
 
 window.autoResize = function(el) {
   el.style.height='auto';
@@ -1863,27 +1902,11 @@ function checkStage4() {
 }
 
 /* ═══════════════════════════════════════
-   5단계 — 전체 한번에
+   5단계 — 전체 한번에 + 그림 힌트 토글 (포커스 절 따라 갱신)
 ═══════════════════════════════════════ */
 function renderStage5(area) {
   const v = VERSES[S.verseIdx];
   const groups = getVerseGroups(v);
-
-  // 전체 이모지 나열
-  const allCharIdxs = [];
-  v.chunks.forEach(ch => ch.chars.forEach(ci => { if(!allCharIdxs.includes(ci)) allCharIdxs.push(ci); }));
-  const allDone = S.s5_done.size === groups.length;
-  const emojisHtml = allCharIdxs.map(ci => {
-    const c = v.chars[ci];
-    // 이 캐릭터가 속한 절이 하나라도 완료됐으면 correct
-    const anyDone = groups.some((g,gi) =>
-      S.s5_done.has(gi) && g.chunks.some(ch=>ch.chars.includes(ci))
-    );
-    return `<div class="emoji-item${anyDone?' correct':''}">
-      <div class="emoji-icon">${c.icon}</div>
-      <div class="emoji-label">${c.name}</div>
-    </div>`;
-  }).join('');
 
   // 절별 입력칸
   const blocksHtml = groups.map((g, gi) => {
@@ -1893,7 +1916,7 @@ function renderStage5(area) {
       <div class="full-vnum">${g.verseNum}</div>
       ${isDone
         ? `<div class="full-input" style="border-color:var(--teal);background:rgba(45,140,120,.05);color:var(--teal-light);display:block;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.8">${fullText}</div>`
-        : `<textarea class="full-input" id="s5-input-${gi}"
+        : `<textarea class="full-input" id="s5-input-${gi}" data-gi="${gi}"
             placeholder="이 절을 정확히 입력하세요..."
             autocomplete="off" autocorrect="off" spellcheck="false"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();checkS5Single(${gi})}"
@@ -1902,18 +1925,69 @@ function renderStage5(area) {
     </div>`;
   }).join('');
 
+  const sceneHtml = S.s5_hintVisible
+    ? `<div class="scene-stage" id="scene-stage"></div>`
+    : '';
+  const toggleHtml = `<button class="hint-toggle${S.s5_hintVisible?' on':''}" type="button" onclick="toggleS5Hint()">${S.s5_hintVisible?'🙈 그림 가리기':'💡 그림 힌트 보기'}</button>`;
+
   area.innerHTML = `
-    <div class="card" style="margin-top:12px">
-      <div class="card-label">전체 이모지</div>
-      <div class="emoji-row" style="padding:6px 0">${emojisHtml}</div>
-    </div>
-    <div class="card">${blocksHtml}</div>
+    ${sceneHtml}
+    ${toggleHtml}
+    <div class="card" style="margin-top:8px">${blocksHtml}</div>
     <div class="spacer"></div>`;
+
+  if (S.s5_hintVisible) {
+    const g = groups[S.s5_hintGroupIdx];
+    if (g) renderSceneMulti(g.chunks);
+  }
+
+  // 포커스 시 힌트 절 갱신
+  document.querySelectorAll('textarea.full-input').forEach(t => {
+    t.addEventListener('focus', () => {
+      const gi = parseInt(t.dataset.gi, 10);
+      if (Number.isFinite(gi) && S.s5_hintGroupIdx !== gi) {
+        S.s5_hintGroupIdx = gi;
+        if (S.s5_hintVisible) {
+          const g = groups[gi];
+          if (g) renderSceneMulti(g.chunks);
+        }
+      }
+    });
+  });
 
   document.getElementById('btn-main').textContent = '전체 확인';
   document.getElementById('btn-main').className = 'btn-main gold';
   setTimeout(()=>document.getElementById('s5-input-0')?.focus(), 100);
 }
+
+window.toggleS5Hint = function() {
+  S.s5_hintVisible = !S.s5_hintVisible;
+  const toggleBtn = document.querySelector('.hint-toggle');
+  if (S.s5_hintVisible) {
+    let stage = document.getElementById('scene-stage');
+    if (!stage) {
+      stage = document.createElement('div');
+      stage.className = 'scene-stage';
+      stage.id = 'scene-stage';
+      const area = document.getElementById('scroll-area');
+      area.insertBefore(stage, area.firstChild);
+    }
+    const groups = getVerseGroups(VERSES[S.verseIdx]);
+    const g = groups[S.s5_hintGroupIdx];
+    if (g) renderSceneMulti(g.chunks);
+    if (toggleBtn) {
+      toggleBtn.textContent = '🙈 그림 가리기';
+      toggleBtn.classList.add('on');
+    }
+  } else {
+    const stage = document.getElementById('scene-stage');
+    if (stage) stage.remove();
+    if (toggleBtn) {
+      toggleBtn.textContent = '💡 그림 힌트 보기';
+      toggleBtn.classList.remove('on');
+    }
+  }
+};
 
 window.checkS5Single = function(gi) {
   const v = VERSES[S.verseIdx];
