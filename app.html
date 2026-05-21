@@ -380,7 +380,11 @@ body{
 }
 .word-bubble.wrong{
   border-color:var(--error);
-  background:rgba(224,112,112,0.15);
+  background:rgba(224,112,112,0.18);
+}
+.word-bubble.correct{
+  border-color:var(--teal);
+  background:rgba(45,140,120,0.15);
 }
 .bubble-text{display:inline-block}
 .word-bubble.blinking .bubble-text{
@@ -936,6 +940,7 @@ let S = {
   s3_correct: 0,
   s3_target: 0,
   s3_curChunkIdx: -1,
+  s3_hintVisible: false,   // 💡 그림 힌트 토글
   // 4단계
   s4_verseGroups: [],
   s4_groupIdx: 0,
@@ -1089,6 +1094,7 @@ function initStage() {
     S.s3_queue = shuffle(v.chunks.map((_,i)=>i));
     S.s3_correct=0; S.s3_target=4;
     S.s3_curChunkIdx=-1;
+    S.s3_hintVisible = false;
     nextS3();
   } else if (S.stageIdx===3) {
     S.s4_verseGroups = getVerseGroups(v);
@@ -1371,6 +1377,13 @@ function setupS2InputHandlers() {
         else onMain();
       }
     });
+    // 다시 타이핑 시작하면 wrong 표시 제거 (값은 유지)
+    input.addEventListener('input', () => {
+      if (input.classList.contains('wrong')) {
+        input.classList.remove('wrong');
+        input.closest('.word-bubble')?.classList.remove('wrong');
+      }
+    });
     // 포커스 변경 시 힌트 씬도 해당 청크로 갱신
     input.addEventListener('focus', () => {
       const ci = parseInt(input.dataset.ci, 10);
@@ -1411,21 +1424,17 @@ function checkStage2() {
     const answer = v.chunks[ci].text.split(' ')[wi];
     const val = normalize(input.value);
     if (val === answer) {
+      input.classList.remove('wrong');
       input.classList.add('correct');
       input.disabled = true;
       bubble?.classList.remove('wrong');
+      bubble?.classList.add('correct');
       newlyCorrect++;
     } else {
       allCorrect = false;
       input.classList.add('wrong');
       bubble?.classList.add('wrong');
-      setTimeout(() => {
-        if (input && !input.disabled) {
-          input.classList.remove('wrong');
-          bubble?.classList.remove('wrong');
-          input.value = '';
-        }
-      }, 400);
+      // 사용자가 다시 입력하면 'input' 이벤트로 wrong 클래스 제거됨 (값은 유지)
     }
   });
 
@@ -1457,13 +1466,12 @@ function checkStage2() {
 }
 
 /* ═══════════════════════════════════════
-   3단계 — 랜덤 청크 전체 빈칸
+   3단계 — 랜덤 청크 단어 단위 빈칸 + 그림 힌트 토글
 ═══════════════════════════════════════ */
 function renderStage3(area) {
   const v = VERSES[S.verseIdx];
   const chunk = v.chunks[S.s3_curChunkIdx];
 
-  // 현재 청크가 속한 절 그룹 찾기
   const groups = getVerseGroups(v);
   let curGroup = null;
   let curIdxInGroup = -1;
@@ -1472,7 +1480,6 @@ function renderStage3(area) {
     if (idx >= 0) { curGroup = g; curIdxInGroup = idx; break; }
   }
 
-  // 챕터 정보 (예: '계 1장' + '1절' → '계 1장 1절')
   const chapterPart = v.title.split(' ').slice(0, 2).join(' ');
   const fullRef = curGroup ? `${chapterPart} ${curGroup.verseNum}` : v.title;
 
@@ -1484,24 +1491,32 @@ function renderStage3(area) {
     </div>`;
   }).join('');
 
-  // 같은 절의 다른 청크들을 맥락으로 표시 (현재 청크는 빈칸)
+  // 같은 절의 다른 청크들은 맥락으로, 현재 청크는 단어 단위 빈칸 말풍선
   const contextHtml = curGroup ? curGroup.chunks.map((ch, idx) => {
     if (idx === curIdxInGroup) {
-      return `<div style="margin:8px 0">
-        <input class="chunk-blank-input" id="s3-input" type="text"
-          style="width:100%"
-          placeholder="${'_'.repeat(Math.min(ch.text.length, 20))}..."
-          autocomplete="off" autocorrect="off" spellcheck="false"
-          onkeydown="if(event.key==='Enter')onMain()">
-      </div>`;
+      const wordsHtml = ch.text.split(' ').map((w, wi) =>
+        `<span class="word-bubble" data-wi="${wi}">` +
+          `<input class="bubble-input" type="text" data-wi="${wi}" ` +
+          `style="width:${charWidth(w)}" ` +
+          `autocomplete="off" autocorrect="off" spellcheck="false">` +
+        `</span>`
+      ).join(' ');
+      return `<div style="margin:8px 0;padding:10px 12px;background:var(--deep3);border-radius:10px;line-height:2.4;font-size:14px">${wordsHtml}</div>`;
     }
     return `<div style="font-size:13px;color:var(--text-muted);padding:5px 4px;line-height:1.7;border-left:2px solid var(--deep3);padding-left:10px;margin:4px 0">${ch.text}</div>`;
   }).join('') : '';
 
   const progressHtml = `<div class="progress-info">${S.s3_correct}/${S.s3_target} 정답 완료</div>`;
 
+  const sceneHtml = S.s3_hintVisible
+    ? `<div class="scene-stage" id="scene-stage"></div>`
+    : '';
+  const toggleHtml = `<button class="hint-toggle${S.s3_hintVisible?' on':''}" type="button" onclick="toggleS3Hint()">${S.s3_hintVisible?'🙈 그림 가리기':'💡 그림 힌트 보기'}</button>`;
+
   area.innerHTML = `
-    <div class="card" style="margin-top:12px">
+    ${sceneHtml}
+    ${toggleHtml}
+    <div class="card" style="margin-top:8px">
       <div class="emoji-row">${emojisHtml}</div>
       <div style="padding:4px 0">
         <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1514,24 +1529,94 @@ function renderStage3(area) {
     ${progressHtml}
     <div class="spacer"></div>`;
 
+  if (S.s3_hintVisible) {
+    renderScene(chunk);
+  }
+
   document.getElementById('btn-main').textContent = '확인';
   document.getElementById('btn-main').className = 'btn-main';
-  setTimeout(()=>document.getElementById('s3-input')?.focus(), 100);
+  setupS3InputHandlers();
 }
+
+function setupS3InputHandlers() {
+  const inputs = Array.from(document.querySelectorAll('.bubble-input'));
+  inputs.forEach((input, i) => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const next = inputs.slice(i + 1).find(n => !n.disabled);
+        if (next) next.focus();
+        else onMain();
+      }
+    });
+    input.addEventListener('input', () => {
+      if (input.classList.contains('wrong')) {
+        input.classList.remove('wrong');
+        input.closest('.word-bubble')?.classList.remove('wrong');
+      }
+    });
+  });
+  if (inputs[0]) inputs[0].focus();
+}
+
+window.toggleS3Hint = function() {
+  S.s3_hintVisible = !S.s3_hintVisible;
+  const toggleBtn = document.querySelector('.hint-toggle');
+  if (S.s3_hintVisible) {
+    let stage = document.getElementById('scene-stage');
+    if (!stage) {
+      stage = document.createElement('div');
+      stage.className = 'scene-stage';
+      stage.id = 'scene-stage';
+      const area = document.getElementById('scroll-area');
+      area.insertBefore(stage, area.firstChild);
+    }
+    const v = VERSES[S.verseIdx];
+    renderScene(v.chunks[S.s3_curChunkIdx]);
+    if (toggleBtn) {
+      toggleBtn.textContent = '🙈 그림 가리기';
+      toggleBtn.classList.add('on');
+    }
+  } else {
+    const stage = document.getElementById('scene-stage');
+    if (stage) stage.remove();
+    if (toggleBtn) {
+      toggleBtn.textContent = '💡 그림 힌트 보기';
+      toggleBtn.classList.remove('on');
+    }
+  }
+};
 
 function checkStage3() {
   const v = VERSES[S.verseIdx];
   const chunk = v.chunks[S.s3_curChunkIdx];
-  const answer = chunk.text;
-  const input = document.getElementById('s3-input');
-  if (!input) return;
-  const val = normalize(input.value);
+  const words = chunk.text.split(' ');
+  const inputs = Array.from(document.querySelectorAll('.bubble-input'));
+  if (inputs.length === 0) return;
 
-  if (val === answer) {
-    input.className = 'chunk-blank-input correct';
-    input.disabled = true;
+  let allCorrect = true;
+  inputs.forEach(input => {
+    const bubble = input.closest('.word-bubble');
+    if (input.disabled) return;
+    const wi = parseInt(input.dataset.wi, 10);
+    const answer = words[wi];
+    const val = normalize(input.value);
+    if (val === answer) {
+      input.classList.remove('wrong');
+      input.classList.add('correct');
+      input.disabled = true;
+      bubble?.classList.remove('wrong');
+      bubble?.classList.add('correct');
+    } else {
+      allCorrect = false;
+      input.classList.add('wrong');
+      bubble?.classList.add('wrong');
+    }
+  });
+
+  if (allCorrect) {
     S.s3_correct++; S.stageCorrect++; S.streak++;
-    showFeedback('correct', `✓ 정답!`);
+    showFeedback('correct', '✓ 정답!');
     updateStats();
     if (S.s3_correct >= S.s3_target) {
       setTimeout(()=>unlockStage(3), 1000);
@@ -1539,10 +1624,14 @@ function checkStage3() {
       setTimeout(()=>{ nextS3(); hideFeedback(); renderStage(); }, 1000);
     }
   } else {
-    input.className = 'chunk-blank-input wrong';
     S.streak = 0;
-    showFeedback('wrong', `✗ 정확히 입력하세요`);
-    setTimeout(()=>{ input.className='chunk-blank-input'; input.value=''; input.focus(); hideFeedback(); }, 1400);
+    updateStats();
+    showFeedback('wrong', '✗ 빨간 빈칸을 다시 확인하세요');
+    setTimeout(() => {
+      const firstWrong = inputs.find(i => i.classList.contains('wrong'));
+      firstWrong?.focus();
+      hideFeedback();
+    }, 1200);
   }
 }
 
