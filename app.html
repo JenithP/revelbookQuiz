@@ -911,7 +911,6 @@ let S = {
   s2_totalRounds: 0,       // 완료한 라운드 수
   s2_targetRounds: 3,      // 목표 라운드 수
   s2_hintPhase: true,      // true=힌트 깜빡 중, false=입력 중
-  s2_countdownTimer: null, // 카운트다운 타이머 ID
   // 3단계
   s3_queue: [],
   s3_correct: 0,
@@ -1042,7 +1041,6 @@ function hideFeedback() { document.getElementById('feedback').style.display='non
 ═══════════════════════════════════════ */
 window.selectVerse = function(i) {
   stopTTS();
-  clearS2Timer();
   S.verseIdx=i; S.stageIdx=0; S.stageCorrect=0; S.streak=0;
   S.stageUnlocked=[true,true,false,false,false];
   hideFeedback();
@@ -1052,7 +1050,6 @@ window.selectVerse = function(i) {
 window.selectStage = function(i) {
   if(!S.stageUnlocked[i]) return;
   stopTTS();
-  clearS2Timer();
   S.stageIdx=i; S.stageCorrect=0;
   hideFeedback();
   initStage();
@@ -1062,7 +1059,6 @@ window.selectStage = function(i) {
 function initStage() {
   const v = VERSES[S.verseIdx];
   if (S.stageIdx===1) {
-    clearS2Timer();
     S.s2_totalRounds = 0;
     S.s2_targetRounds = 3;
     S.s2_blankIndices = [];
@@ -1095,13 +1091,6 @@ function nextS2() {
   S.s2_blankIndices = shuffle(allWords).slice(0, count);
   S.s2_roundCorrect = 0;
   S.s2_hintPhase = true;
-}
-
-function clearS2Timer() {
-  if (S.s2_countdownTimer) {
-    clearInterval(S.s2_countdownTimer);
-    S.s2_countdownTimer = null;
-  }
 }
 
 function nextS3() {
@@ -1202,7 +1191,6 @@ function renderScene(chunk) {
    3 라운드 완료 시 3단계 잠금 해제
 ═══════════════════════════════════════ */
 function renderStage2(area) {
-  clearS2Timer();
   const v = VERSES[S.verseIdx];
   const groups = getVerseGroups(v);
   const blankSet = new Set(S.s2_blankIndices.map(b => `${b.ci}-${b.wi}`));
@@ -1243,7 +1231,7 @@ function renderStage2(area) {
   }
 
   const guideHtml = S.s2_hintPhase
-    ? `<div class="s2-guide" id="s2-guide">👀 5초 후 빈칸이 됩니다...</div>`
+    ? `<div class="s2-guide" id="s2-guide">👀 깜빡이는 단어를 외운 뒤 [도전!] 을 누르세요</div>`
     : `<div class="s2-guide input-mode" id="s2-guide">빈칸을 채워주세요 ✏️</div>`;
 
   area.innerHTML = `
@@ -1258,32 +1246,15 @@ function renderStage2(area) {
     <div class="spacer"></div>`;
 
   const btn = document.getElementById('btn-main');
+  btn.style.display = '';
   if (S.s2_hintPhase) {
-    btn.style.display = 'none';
-    startS2Countdown();
+    btn.textContent = '도전! ✨';
+    btn.className = 'btn-main gold';
   } else {
-    btn.style.display = '';
     btn.textContent = '확인';
     btn.className = 'btn-main';
     setupS2InputHandlers();
   }
-}
-
-function startS2Countdown() {
-  clearS2Timer();
-  let countdown = 5;
-  S.s2_countdownTimer = setInterval(() => {
-    countdown--;
-    if (S.stageIdx !== 1) { clearS2Timer(); return; }
-    const el = document.getElementById('s2-guide');
-    if (!el) { clearS2Timer(); return; }
-    if (countdown > 0) {
-      el.textContent = `👀 ${countdown}초 후 빈칸이 됩니다...`;
-    } else {
-      clearS2Timer();
-      switchToInputPhase();
-    }
-  }, 1000);
 }
 
 function switchToInputPhase() {
@@ -1340,7 +1311,8 @@ function showReviewBanner() {
 }
 
 function checkStage2() {
-  if (S.s2_hintPhase) return; // 힌트 phase 중에는 검사 안 함
+  // 힌트 phase 에서 누르면 빈칸 phase 로 전환 (사용자 페이스)
+  if (S.s2_hintPhase) { switchToInputPhase(); return; }
   const v = VERSES[S.verseIdx];
   const inputs = Array.from(document.querySelectorAll('.bubble-input'));
   if (inputs.length === 0) return;
