@@ -614,6 +614,11 @@ body{
 .av-crown-drop{position:absolute;left:50%;top:0;width:118px;height:118px;object-fit:contain;animation:crownDrop 2.4s ease forwards}
 @keyframes crownDrop{0%{transform:translate(-50%,-170px);opacity:0}25%{opacity:1}100%{transform:translate(-50%,14px)}}
 .av-card.pop{margin-top:20px}
+/* 첫 진입 단계: 콘텐츠 위 팝업이 아니라 단독 화면처럼 */
+.av-overlay.landing{background:var(--deep)}
+.ch-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.ch-pick{padding:13px;border-radius:12px;border:1px solid var(--card-border);background:var(--deep3);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:.2s}
+.ch-pick:hover{border-color:var(--gold);background:rgba(201,168,76,.1)}
 </style>
 </head>
 <body>
@@ -1228,12 +1233,15 @@ let avatarBooted = false;
 function bootAvatar(){
   if (avatarBooted) return; avatarBooted = true;
   loadAvatarState();
+  renderAvatarThumb();
   if (S.avatarGender) {
+    // 이미 캐릭터 설정됨 → 보유 보상 동기화 후 시작할 장 선택
     AVATAR_ITEMS.forEach(it => { if (it.cond()) S.avatarUnlocked.add(it.id); });
     saveAvatarState();
     renderAvatarThumb();
+    showChapterSelect();
   } else {
-    renderAvatarThumb();
+    // 첫 접속 → 캐릭터 설정 화면부터 (그 후 장 선택)
     showGenderPicker();
   }
 }
@@ -1252,10 +1260,10 @@ function showNextGift(){
   if (it.finale) showCrownFinale(it); else showGiftModal(it);
 }
 
-window.showGenderPicker = function(){
+window.showGenderPicker = function(fromSettings){
   const layer = document.getElementById('avatar-layer');
   layer.innerHTML = `
-    <div class="av-overlay">
+    <div class="av-overlay landing">
       <div class="av-card">
         <div class="av-announce">나의 캐릭터를 선택하세요 🙂</div>
         <div class="av-pick-row">
@@ -1266,12 +1274,35 @@ window.showGenderPicker = function(){
     </div>`;
   layer.querySelectorAll('.av-pick').forEach(b => b.onclick = () => {
     setGender(b.dataset.g);
-    closeAvatarLayer();
     AVATAR_ITEMS.forEach(it => { if (it.cond()) S.avatarUnlocked.add(it.id); });
     saveAvatarState();
     renderAvatarThumb();
+    if (fromSettings) closeAvatarLayer();   // 설정에서 다시 고른 경우엔 그냥 닫기
+    else showChapterSelect();               // 첫 접속 흐름 → 장 선택으로
   });
 };
+
+// 시작할 계시록 장 선택 (자동으로 1장 시작하지 않음)
+function showChapterSelect(){
+  const layer = document.getElementById('avatar-layer');
+  const btns = VERSES.map((v, i) => {
+    const done = S.mastered.has(v.id);
+    return `<button class="ch-pick" data-i="${i}">${v.title}${done ? ' ✅' : ''}</button>`;
+  }).join('');
+  layer.innerHTML = `
+    <div class="av-overlay landing">
+      <div class="av-card">
+        <div class="av-announce">📖 어느 장부터 시작할까요?</div>
+        <div class="ch-list">${btns}</div>
+      </div>
+    </div>`;
+  layer.querySelectorAll('.ch-pick').forEach(b => b.onclick = () => {
+    const i = parseInt(b.dataset.i, 10);
+    closeAvatarLayer();
+    window.selectVerse(i);
+  });
+}
+window.showChapterSelect = showChapterSelect;
 
 function showGiftModal(it){
   S.giftModalOpen = true;
