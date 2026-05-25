@@ -607,7 +607,7 @@ body{
 .av-li.got{color:var(--teal-light);background:rgba(45,140,120,.08)}
 .av-li-need{font-size:11px;color:var(--text-muted);text-align:right;flex-shrink:0}
 /* 면류관 피날레 */
-.av-overlay.finale{flex-direction:column;background:rgba(0,0,0,.86)}
+.av-overlay.finale{flex-direction:column;background:var(--deep)}
 .av-fanfare{font-size:42px;margin-bottom:10px;animation:giftIn .6s ease}
 .av-finale-stage{position:relative;width:240px;height:300px;display:flex;align-items:flex-end;justify-content:center}
 .av-finale-stage .av-char{width:220px;height:220px;margin:0}
@@ -1634,6 +1634,7 @@ function renderStage() {
     document.getElementById('btn-main').style.display = 'none';
     return;
   }
+  document.getElementById('bottom-nav').style.display = '';  // 완전암기 화면에서 숨겼던 하단바 복원
   document.getElementById('btn-main').style.display = '';
   const inStage1 = S.stageIdx===0;
   document.getElementById('tts-bar').style.display = inStage1 ? 'flex' : 'none';
