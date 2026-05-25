@@ -188,6 +188,34 @@ body{
 .verse-textarea:focus{border-color:var(--purple-bright)}
 .verse-textarea.correct{border-color:var(--teal);background:rgba(45,140,120,.05);color:var(--teal-light)}
 .verse-textarea.wrong{border-color:var(--error);animation:shake .3s ease}
+
+/* 4·5단계 — 깜빡이는 평문(타원 없음) */
+.verse-hint-line{
+  font-size:15px;line-height:2;color:var(--text);
+  padding:12px 14px;background:var(--deep3);border-radius:10px;
+}
+.blink-line-4{animation:bubbleBlink4 3s ease-out infinite}
+.blink-line-5{animation:bubbleBlink5 4s ease-out infinite}
+/* 완료된 절 표시 */
+.verse-done-text{
+  font-size:13px;line-height:1.8;color:var(--teal-light);
+  background:rgba(45,140,120,.06);border-radius:8px;padding:8px 10px;
+}
+.verse-progress{font-size:12px;color:var(--text-dim);margin:0 14px 6px;text-align:right}
+/* 4·5단계 — 밑줄친 빈칸(줄글로 쭉 입력) */
+.verse-lined{
+  display:block;width:100%;box-sizing:border-box;
+  border:none;outline:none;resize:none;overflow:hidden;
+  background-color:transparent;
+  background-image:repeating-linear-gradient(transparent,transparent calc(2em - 1.5px),var(--purple-bright) calc(2em - 1.5px),var(--purple-bright) 2em);
+  background-attachment:local;
+  line-height:2em;font-size:15px;font-family:'Pretendard',sans-serif;
+  color:var(--text);padding:0 2px;
+}
+.verse-lined::placeholder{color:var(--text-muted)}
+.verse-lined:focus{background-image:repeating-linear-gradient(transparent,transparent calc(2em - 1.5px),var(--gold) calc(2em - 1.5px),var(--gold) 2em)}
+.verse-lined.correct{color:var(--teal-light);background-image:repeating-linear-gradient(transparent,transparent calc(2em - 1.5px),var(--teal) calc(2em - 1.5px),var(--teal) 2em)}
+.verse-lined.wrong{animation:shake .3s ease}
 .verse-answer-show{
   font-size:13px;line-height:1.8;color:var(--text-dim);
   background:rgba(0,0,0,.2);border-radius:8px;padding:8px 10px;margin-top:6px;
@@ -1825,28 +1853,25 @@ function checkStage3() {
 ═══════════════════════════════════════ */
 function renderStage4(area) {
   const groups = S.s4_verseGroups;
-  const g = groups[S.s4_groupIdx];
+  const cur = S.s4_groupIdx;
+  const g = groups[cur];
 
-  // 모든 절을 한 번에 표시 — 깜빡임(힌트) → 절마다 자유 입력칸 → 완료 시 텍스트
-  const groupsHtml = groups.map((grp, gi) => {
+  // 한 절씩 진행 — 완료한 절(텍스트) + 현재 절(깜빡임 평문 → 밑줄 빈칸). 다음 절은 아직 안 보임.
+  const blocksHtml = groups.map((grp, gi) => {
+    if (gi > cur) return '';
     const isDone = S.s4_done.has(gi);
     const fullText = grp.chunks.map(ch=>ch.text).join(' ');
     let body;
     if (isDone) {
-      body = `<div style="font-size:13px;color:var(--teal-light);line-height:1.8;background:rgba(45,140,120,.06);border-radius:8px;padding:8px 10px">${fullText}</div>`;
+      body = `<div class="verse-done-text">${fullText}</div>`;
     } else if (S.s4_hintPhase) {
-      const wordsHtml = grp.chunks.map(ch =>
-        ch.text.split(' ').map(w =>
-          `<span class="word-bubble blinking-4"><span class="bubble-text">${w}</span></span>`
-        ).join(' ')
-      ).join(' ');
-      body = `<div class="bubble-verse-box">${wordsHtml}</div>`;
+      body = `<div class="verse-hint-line blink-line-4">${fullText}</div>`;
     } else {
-      body = `<textarea class="verse-textarea" data-gi="${gi}" placeholder="이 절을 입력하세요 (띄어쓰기는 달라도 됩니다)" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>`;
+      body = `<textarea class="verse-lined" data-gi="${gi}" rows="1" placeholder="이 절을 입력하세요 (띄어쓰기는 달라도 됩니다)" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>`;
     }
     return `<div class="verse-block">
       <div class="verse-block-label">
-        <span class="vnum" style="font-size:12px${isDone?'':';opacity:.7'}">${grp.verseNum}</span>
+        <span class="vnum" style="font-size:12px">${grp.verseNum}</span>
       </div>
       ${body}
     </div>`;
@@ -1860,7 +1885,8 @@ function renderStage4(area) {
   area.innerHTML = `
     ${sceneHtml}
     ${toggleHtml}
-    <div class="card" style="margin-top:8px">${groupsHtml}</div>
+    <div class="verse-progress">${cur+1} / ${groups.length} 절</div>
+    <div class="card">${blocksHtml}</div>
     <div class="spacer"></div>`;
 
   if (S.s4_hintVisible && g) renderSceneMulti(g.chunks);
@@ -1882,27 +1908,14 @@ function switchToS4InputPhase() {
 }
 
 function setupS4InputHandlers() {
-  const areas = Array.from(document.querySelectorAll('.verse-textarea'));
-  areas.forEach(ta => {
-    if (ta.disabled) return;
+  const ta = document.querySelector(`.verse-lined[data-gi="${S.s4_groupIdx}"]`);
+  if (!ta) return;
+  autoResize(ta);
+  ta.addEventListener('input', () => {
     autoResize(ta);
-    ta.addEventListener('input', () => {
-      autoResize(ta);
-      ta.classList.remove('wrong');
-    });
-    ta.addEventListener('focus', () => {
-      const gi = parseInt(ta.dataset.gi, 10);
-      if (Number.isFinite(gi) && S.s4_groupIdx !== gi) {
-        S.s4_groupIdx = gi;
-        if (S.s4_hintVisible) {
-          const g = S.s4_verseGroups[gi];
-          if (g) renderSceneMulti(g.chunks);
-        }
-      }
-    });
+    ta.classList.remove('wrong');
   });
-  const firstEditable = areas.find(a => !a.disabled);
-  firstEditable?.focus();
+  ta.focus();
 }
 
 window.toggleS4Hint = function() {
@@ -1935,7 +1948,7 @@ window.toggleS4Hint = function() {
 
 window.autoResize = function(el) {
   el.style.height='auto';
-  el.style.height=Math.min(el.scrollHeight,160)+'px';
+  el.style.height=el.scrollHeight+'px';
 };
 
 function checkStage4() {
@@ -1943,48 +1956,37 @@ function checkStage4() {
 
   const v = VERSES[S.verseIdx];
   const groups = S.s4_verseGroups;
-  const areas = Array.from(document.querySelectorAll('.verse-textarea'));
-  if (areas.length === 0) return;
+  const gi = S.s4_groupIdx;
+  const ta = document.querySelector(`.verse-lined[data-gi="${gi}"]`);
+  if (!ta) return;
 
-  let anyWrong = false;
-  let newlyCorrect = 0;
-  areas.forEach(ta => {
-    if (ta.disabled) return;
-    const gi = parseInt(ta.dataset.gi, 10);
-    if (S.s4_done.has(gi)) return;
-    // 띄어쓰기 무시 — 글자만 맞으면 정답
-    const answer = normalizeNoSpace(groups[gi].chunks.map(ch=>ch.text).join(' '));
-    const val = normalizeNoSpace(ta.value);
-    if (val && val === answer) {
-      ta.classList.remove('wrong');
-      ta.classList.add('correct');
-      ta.disabled = true;
-      S.s4_done.add(gi);
-      newlyCorrect++;
+  // 띄어쓰기 무시 — 글자만 맞으면 정답
+  const answer = normalizeNoSpace(groups[gi].chunks.map(ch=>ch.text).join(' '));
+  const val = normalizeNoSpace(ta.value);
+
+  if (val && val === answer) {
+    ta.classList.remove('wrong');
+    ta.classList.add('correct');
+    ta.disabled = true;
+    S.s4_done.add(gi);
+    S.stageCorrect++; S.streak++;
+    updateStats();
+    if (S.s4_done.size === groups.length) {
+      saveScore(v.id, {stage4done:true, stage:4});
+      showFeedback('correct','✓ 모든 절 완료! 전체 암기로 이동합니다.');
+      setTimeout(()=>{ window.selectStage(4); }, 1200);
     } else {
-      anyWrong = true;
-      ta.classList.add('wrong');
+      S.s4_groupIdx++;
+      S.s4_hintPhase = true; // 다음 절은 깜빡임부터
+      showFeedback('correct','✓ 정답! 다음 절로 →');
+      setTimeout(()=>{ hideFeedback(); renderStage(); }, 1100);
     }
-  });
-
-  if (newlyCorrect > 0) { S.stageCorrect += newlyCorrect; S.streak += newlyCorrect; }
-  else if (anyWrong) { S.streak = 0; }
-  updateStats();
-
-  if (S.s4_done.size === groups.length) {
-    saveScore(v.id, {stage4done:true, stage:4});
-    showFeedback('correct','✓ 모든 절 완료! 전체 암기로 이동합니다.');
-    setTimeout(()=>{ window.selectStage(4); }, 1200);
-  } else if (anyWrong) {
-    showFeedback('wrong','✗ 빨간 칸을 다시 확인하세요');
-    setTimeout(() => {
-      const firstWrong = areas.find(a => a.classList.contains('wrong') && !a.disabled);
-      firstWrong?.focus();
-      hideFeedback();
-    }, 1200);
   } else {
-    showFeedback('correct','✓ 정답!');
-    setTimeout(hideFeedback, 1000);
+    S.streak = 0;
+    updateStats();
+    ta.classList.add('wrong');
+    showFeedback('wrong','✗ 다시 확인하세요 — 글자가 정확히 일치해야 합니다');
+    setTimeout(() => { ta.focus(); hideFeedback(); }, 1300);
   }
 }
 
@@ -1995,23 +1997,14 @@ function renderStage5(area) {
   const v = VERSES[S.verseIdx];
   const groups = getVerseGroups(v);
 
-  // 힌트 phase: 전체를 절 단위로 깜빡이며 표시
-  // 입력 phase: 전체를 하나의 입력칸에 처음부터 끝까지 쭉 입력
+  // 힌트 phase: 전체를 깜빡이는 평문(타원 없음)으로 표시
+  // 입력 phase: 전체를 하나의 밑줄 빈칸에 처음부터 끝까지 쭉 입력
+  const fullText = v.chunks.map(ch=>ch.text).join(' ');
   let bodyHtml;
   if (S.s5_hintPhase) {
-    bodyHtml = groups.map(g => {
-      const wordsHtml = g.chunks.map(ch =>
-        ch.text.split(' ').map(w =>
-          `<span class="word-bubble blinking-5"><span class="bubble-text">${w}</span></span>`
-        ).join(' ')
-      ).join(' ');
-      return `<div class="full-verse-block">
-        <div class="full-vnum">${g.verseNum}</div>
-        <div class="bubble-verse-box">${wordsHtml}</div>
-      </div>`;
-    }).join('');
+    bodyHtml = `<div class="verse-hint-line blink-line-5">${fullText}</div>`;
   } else {
-    bodyHtml = `<textarea class="verse-textarea" id="s5-textarea" placeholder="전체 구절을 처음부터 끝까지 입력하세요 (띄어쓰기는 달라도 됩니다)" style="min-height:200px;max-height:340px" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>`;
+    bodyHtml = `<textarea class="verse-lined" id="s5-textarea" rows="6" placeholder="전체 구절을 처음부터 끝까지 입력하세요 (띄어쓰기는 달라도 됩니다)" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>`;
   }
 
   const sceneHtml = S.s5_hintVisible
@@ -2026,8 +2019,7 @@ function renderStage5(area) {
     <div class="spacer"></div>`;
 
   if (S.s5_hintVisible) {
-    const g = groups[S.s5_hintGroupIdx] || groups[0];
-    if (g) renderSceneMulti(g.chunks);
+    renderSceneMulti(v.chunks);
   }
 
   const btn5 = document.getElementById('btn-main');
@@ -2049,7 +2041,8 @@ function switchToS5InputPhase() {
 function setupS5InputHandlers() {
   const ta = document.getElementById('s5-textarea');
   if (!ta) return;
-  ta.addEventListener('input', () => { ta.classList.remove('wrong'); });
+  autoResize(ta);
+  ta.addEventListener('input', () => { autoResize(ta); ta.classList.remove('wrong'); });
   ta.focus();
 }
 
@@ -2065,9 +2058,7 @@ window.toggleS5Hint = function() {
       const area = document.getElementById('scroll-area');
       area.insertBefore(stage, area.firstChild);
     }
-    const groups = getVerseGroups(VERSES[S.verseIdx]);
-    const g = groups[S.s5_hintGroupIdx];
-    if (g) renderSceneMulti(g.chunks);
+    renderSceneMulti(VERSES[S.verseIdx].chunks);
     if (toggleBtn) {
       toggleBtn.textContent = '🙈 그림 가리기';
       toggleBtn.classList.add('on');
