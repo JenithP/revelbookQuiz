@@ -1133,7 +1133,9 @@ let S = {
   avatarGender: null,
   avatarUnlocked: new Set(),
   giftQueue: [],
-  giftModalOpen: false
+  giftModalOpen: false,
+  // 첫 진입 흐름: 장 선택 전까지 퀴즈/음성 시작 안 함
+  started: false
 };
 
 /* 사용자 */
@@ -1209,6 +1211,15 @@ function loadAvatarState(){
   catch(e){ S.avatarUnlocked = new Set(); }
 }
 function saveAvatarState(){ localStorage.setItem(avatarKey(), JSON.stringify([...S.avatarUnlocked])); }
+// 마지막으로 본 장 기억 (재접속 시 복원)
+function lastVerseKey(){ return 'revel_lastVerse_' + (S.user?.uid || 'guest'); }
+function saveLastVerse(i){ try { localStorage.setItem(lastVerseKey(), String(i)); } catch(e){} }
+function getLastVerse(){
+  const v = localStorage.getItem(lastVerseKey());
+  if (v == null) return null;
+  const i = parseInt(v, 10);
+  return (i >= 0 && i < VERSES.length) ? i : null;
+}
 function setGender(g){
   S.avatarGender = g;
   localStorage.setItem('revel_avatarGender', g);
@@ -1234,15 +1245,22 @@ function bootAvatar(){
   if (avatarBooted) return; avatarBooted = true;
   loadAvatarState();
   renderAvatarThumb();
-  if (S.avatarGender) {
-    // 이미 캐릭터 설정됨 → 보유 보상 동기화 후 시작할 장 선택
-    AVATAR_ITEMS.forEach(it => { if (it.cond()) S.avatarUnlocked.add(it.id); });
-    saveAvatarState();
-    renderAvatarThumb();
-    showChapterSelect();
-  } else {
-    // 첫 접속 → 캐릭터 설정 화면부터 (그 후 장 선택)
+  if (!S.avatarGender) {
+    // 첫 접속 → 캐릭터 설정 → 장 선택
     showGenderPicker();
+    return;
+  }
+  // 캐릭터 기설정 → 보유 보상 동기화
+  AVATAR_ITEMS.forEach(it => { if (it.cond()) S.avatarUnlocked.add(it.id); });
+  saveAvatarState();
+  renderAvatarThumb();
+  const last = getLastVerse();
+  if (last != null) {
+    // 재접속 → 장 선택 없이 마지막 장으로 바로 시작
+    window.selectVerse(last);
+  } else {
+    // 캐릭터는 있으나 아직 장을 한 번도 안 고름 → 장 선택
+    showChapterSelect();
   }
 }
 // 새로 충족된 보상 감지 → 큐에 넣고 순서대로 표시
@@ -1510,6 +1528,8 @@ window.selectVerse = function(i) {
   stopTTS();
   S.verseIdx=i; S.stageIdx=0; S.stageCorrect=0; S.streak=0;
   S.stageUnlocked = defaultUnlocked();
+  S.started = true;
+  saveLastVerse(i);
   hideFeedback();
   renderAll();
 };
@@ -1588,6 +1608,17 @@ function nextS3() {
 ═══════════════════════════════════════ */
 function renderStage() {
   const area = document.getElementById('scroll-area');
+  // 장 선택 전: 퀴즈/음성 시작 금지 (빈 화면, 랜딩 오버레이가 덮음)
+  if (!S.started) {
+    stopTTS();
+    area.innerHTML = '';
+    document.getElementById('tts-bar').style.display = 'none';
+    document.getElementById('btn-prev').style.display = 'none';
+    document.getElementById('btn-replay').style.display = 'none';
+    document.getElementById('btn-main').style.display = 'none';
+    return;
+  }
+  document.getElementById('btn-main').style.display = '';
   const inStage1 = S.stageIdx===0;
   document.getElementById('tts-bar').style.display = inStage1 ? 'flex' : 'none';
   document.getElementById('btn-prev').style.display = inStage1 ? 'flex' : 'none';
