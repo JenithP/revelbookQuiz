@@ -1211,14 +1211,29 @@ function loadAvatarState(){
   catch(e){ S.avatarUnlocked = new Set(); }
 }
 function saveAvatarState(){ localStorage.setItem(avatarKey(), JSON.stringify([...S.avatarUnlocked])); }
-// 마지막으로 본 장 기억 (재접속 시 복원)
-function lastVerseKey(){ return 'revel_lastVerse_' + (S.user?.uid || 'guest'); }
-function saveLastVerse(i){ try { localStorage.setItem(lastVerseKey(), String(i)); } catch(e){} }
-function getLastVerse(){
-  const v = localStorage.getItem(lastVerseKey());
-  if (v == null) return null;
-  const i = parseInt(v, 10);
-  return (i >= 0 && i < VERSES.length) ? i : null;
+// 마지막 위치(장+단계) 기억 — 재접속 시 단계까지 이어서 복원
+function lastPosKey(){ return 'revel_lastPos_' + (S.user?.uid || 'guest'); }
+function saveLastPos(){
+  try { localStorage.setItem(lastPosKey(), JSON.stringify({ v:S.verseIdx, s:S.stageIdx })); } catch(e){}
+}
+function getLastPos(){
+  try {
+    const o = JSON.parse(localStorage.getItem(lastPosKey()) || 'null');
+    if (!o || !(o.v >= 0 && o.v < VERSES.length)) return null;
+    return { v: o.v, s: (o.s >= 0 && o.s <= 4) ? o.s : 0 };
+  } catch(e){ return null; }
+}
+// 마지막 장+단계로 바로 시작
+function restoreLastPos(pos){
+  stopTTS();
+  S.verseIdx = pos.v;
+  S.stageIdx = pos.s || 0;
+  S.stageCorrect = 0; S.streak = 0; S.chunkIdx = 0;
+  S.stageUnlocked = defaultUnlocked();
+  S.started = true;
+  if (S.stageIdx >= 1) initStage();   // 2~5단계는 내부 상태 셋업 필요
+  saveLastPos();
+  renderAll();
 }
 function setGender(g){
   S.avatarGender = g;
@@ -1254,10 +1269,10 @@ function bootAvatar(){
   AVATAR_ITEMS.forEach(it => { if (it.cond()) S.avatarUnlocked.add(it.id); });
   saveAvatarState();
   renderAvatarThumb();
-  const last = getLastVerse();
-  if (last != null) {
-    // 재접속 → 장 선택 없이 마지막 장으로 바로 시작
-    window.selectVerse(last);
+  const pos = getLastPos();
+  if (pos != null) {
+    // 재접속 → 장 선택 없이 마지막 장+단계로 바로 이어서 시작
+    restoreLastPos(pos);
   } else {
     // 캐릭터는 있으나 아직 장을 한 번도 안 고름 → 장 선택
     showChapterSelect();
@@ -1529,7 +1544,7 @@ window.selectVerse = function(i) {
   S.verseIdx=i; S.stageIdx=0; S.stageCorrect=0; S.streak=0;
   S.stageUnlocked = defaultUnlocked();
   S.started = true;
-  saveLastVerse(i);
+  saveLastPos();
   hideFeedback();
   renderAll();
 };
@@ -1538,6 +1553,7 @@ window.selectStage = function(i) {
   if(!S.stageUnlocked[i]) return;
   stopTTS();
   S.stageIdx=i; S.stageCorrect=0;
+  saveLastPos();
   hideFeedback();
   initStage();
   renderStageTabs(); updateHeader(); updateStats(); renderStage();
