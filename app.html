@@ -570,6 +570,50 @@ body{
 .fs-btn.active{background:var(--purple);border-color:var(--purple-bright);color:#fff}
 .fs-preview-label{font-size:11px;color:var(--text-muted);margin-bottom:6px}
 .fs-preview{padding:12px 14px;background:var(--deep3);border-radius:10px;line-height:2;color:var(--text);font-size:calc(15px*var(--fs,1))}
+
+/* ===== 아바타 / 보상(옷입히기) ===== */
+.header-avatar{
+  width:34px;height:34px;border-radius:50%;overflow:hidden;flex-shrink:0;padding:0;
+  border:1px solid var(--gold);background:var(--deep3);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.header-avatar img{width:100%;height:100%;object-fit:cover}
+.av-overlay{
+  position:fixed;inset:0;z-index:2500;max-width:420px;margin:0 auto;
+  background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;
+}
+.av-card{
+  background:var(--deep2);border:1px solid var(--gold);border-radius:18px;
+  padding:24px 22px;width:calc(100% - 48px);max-width:340px;text-align:center;
+  box-shadow:0 14px 48px rgba(0,0,0,.6);animation:bannerPop .5s ease;
+}
+.av-head{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:700;color:var(--gold-light);margin-bottom:14px}
+.av-announce{font-size:16px;font-weight:600;color:var(--gold-light);line-height:1.5;margin-bottom:16px}
+.av-gift{width:130px;height:130px;object-fit:contain;margin:6px auto 18px;display:block;animation:giftIn .6s ease}
+.av-gift-fallback{font-size:88px;margin:6px auto 18px}
+@keyframes giftIn{0%{transform:scale(.3) rotate(-20deg);opacity:0}60%{transform:scale(1.15) rotate(8deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+.av-char{width:180px;height:180px;object-fit:contain;margin:4px auto 14px;display:block}
+.av-char.big{width:210px;height:210px}
+.av-item-name{font-size:15px;color:var(--teal-light);font-weight:600;margin-bottom:16px}
+.av-btn{width:100%;padding:13px;border:none;border-radius:12px;background:var(--purple);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s}
+.av-btn:hover{filter:brightness(1.1)}
+.av-btn.gold{background:linear-gradient(135deg,var(--gold),#a07830);color:#1a1200}
+.av-pick-row{display:flex;gap:14px;margin-top:8px}
+.av-pick{flex:1;background:var(--deep3);border:2px solid var(--card-border);border-radius:14px;padding:14px 8px;cursor:pointer;color:var(--text);font-size:14px;font-weight:600;font-family:inherit}
+.av-pick img{width:92px;height:92px;object-fit:contain;display:block;margin:0 auto 8px}
+.av-pick:hover{border-color:var(--gold)}
+.av-list{margin-top:6px;text-align:left}
+.av-li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;background:var(--deep3);margin-bottom:6px;font-size:13px;color:var(--text-muted)}
+.av-li.got{color:var(--teal-light);background:rgba(45,140,120,.08)}
+.av-li-need{font-size:11px;color:var(--text-muted);text-align:right;flex-shrink:0}
+/* 면류관 피날레 */
+.av-overlay.finale{flex-direction:column;background:rgba(0,0,0,.86)}
+.av-fanfare{font-size:42px;margin-bottom:10px;animation:giftIn .6s ease}
+.av-finale-stage{position:relative;width:240px;height:300px;display:flex;align-items:flex-end;justify-content:center}
+.av-finale-stage .av-char{width:220px;height:220px;margin:0}
+.av-crown-drop{position:absolute;left:50%;top:0;width:118px;height:118px;object-fit:contain;animation:crownDrop 2.4s ease forwards}
+@keyframes crownDrop{0%{transform:translate(-50%,-170px);opacity:0}25%{opacity:1}100%{transform:translate(-50%,14px)}}
+.av-card.pop{margin-top:20px}
 </style>
 </head>
 <body>
@@ -587,6 +631,7 @@ body{
     <div class="dot"></div>
     <div class="dot"></div>
   </div>
+  <button class="header-avatar" id="avatar-thumb" onclick="openCharacter()" title="내 캐릭터" style="display:none"></button>
   <button class="header-gear" id="header-gear" onclick="openSettings()" title="설정">⚙</button>
 </div>
 
@@ -636,6 +681,9 @@ body{
     <div class="fs-preview">예수 그리스도의 계시라</div>
   </div>
 </div>
+
+<!-- 아바타 / 보상 오버레이 (동적 렌더) -->
+<div id="avatar-layer"></div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
@@ -1075,7 +1123,12 @@ let S = {
   scores: {},
   user: null,
   // 설정
-  fontLevel: 1
+  fontLevel: 1,
+  // 아바타 / 보상
+  avatarGender: null,
+  avatarUnlocked: new Set(),
+  giftQueue: [],
+  giftModalOpen: false
 };
 
 /* 사용자 */
@@ -1106,6 +1159,214 @@ window.closeSettings = () => document.getElementById('settings-overlay').classLi
 // 저장된 글자 크기 적용 (없으면 1단계)
 setFontLevel(parseInt(localStorage.getItem('revel_fontLevel'), 10) || 1);
 
+/* ═══════════════════════════════════════
+   아바타 / 보상 (옷입히기)
+   단계를 깰 때마다 선물이 도착 → [받기] → 캐릭터에 적용
+═══════════════════════════════════════ */
+const AVATAR_ITEMS = [
+  { id:'glove', label:'장갑', gift:'gloves.png', announce:'장갑 선물이 도착했어요! 🧤',
+    boy:'boy with glove.png', girl:'girl with glove.png',
+    cond:()=>verseStageDone('rev1',2), need:'계1장 2단계 클리어' },
+  { id:'shoes', label:'제사장 구두', gift:'shoes.png', announce:'멋진 제사장 구두가 도착했어요! 👟',
+    boy:'boy with glove and shoes.png', girl:'girl with glove and shoes.png',
+    cond:()=>verseStageDone('rev7',2), need:'계7장 2단계 클리어' },
+  { id:'shirt', label:'하얀 셔츠', gift:'shirt.png', announce:'하얀 셔츠가 도착했어요! 👔',
+    boy:'boy with shirt.png', girl:'girl with shirt.png',
+    cond:()=>allStageDone(2), need:'2단계 전체(5구절) 클리어' },
+  { id:'jean', label:'화이트 바지', gift:'jeans.png', announce:'제사장용 화이트 바지가 도착했어요! 👖',
+    boy:'boy with jean.png', girl:'girl with jean.png',
+    cond:()=>allStageDone(3), need:'3단계 전체 클리어' },
+  { id:'robe', label:'제사장 로브', gift:'robe.png', announce:'멋진 제사장 로브가 도착했어요! 🥼',
+    boy:'boy with robe.png', girl:'girl with robe.png',
+    cond:()=>allStageDone(4), need:'4단계 전체 클리어' },
+  { id:'crown', label:'면류관', gift:'crown.png', announce:'축하해요!! 제사장님을 위한 멋진 면류관을 받으세요!! 👑',
+    boy:'boy with crown.png', girl:'girl with crown.png',
+    cond:()=>allStageDone(5), need:'5단계 전체 클리어', finale:true }
+];
+function verseStageDone(id, stage){ return !!S.scores[id]?.['stage'+stage+'done']; }
+function allStageDone(stage){ return VERSES.every(v => !!S.scores[v.id]?.['stage'+stage+'done']); }
+function imgUrl(name){ return encodeURI('/images/' + name); }
+function baseAvatar(){ return S.avatarGender==='girl' ? 'girl.png' : 'boy.png'; }
+function pickImg(it){ return S.avatarGender==='girl' ? it.girl : it.boy; }
+// 현재 아바타 = 가장 마지막으로 획득한 아이템 그림 (없으면 기본)
+function currentAvatarImg(excludeId){
+  let img = baseAvatar();
+  for (const it of AVATAR_ITEMS) {
+    if (it.id === excludeId) continue;
+    if (S.avatarUnlocked.has(it.id)) img = pickImg(it);
+  }
+  return img;
+}
+function avatarKey(){ return 'revel_avatarItems_' + (S.user?.uid || 'guest'); }
+function loadAvatarState(){
+  S.avatarGender = S.user?.avatar || localStorage.getItem('revel_avatarGender') || null;
+  try { S.avatarUnlocked = new Set(JSON.parse(localStorage.getItem(avatarKey()) || '[]')); }
+  catch(e){ S.avatarUnlocked = new Set(); }
+}
+function saveAvatarState(){ localStorage.setItem(avatarKey(), JSON.stringify([...S.avatarUnlocked])); }
+function setGender(g){
+  S.avatarGender = g;
+  localStorage.setItem('revel_avatarGender', g);
+  try { const u = JSON.parse(localStorage.getItem('revel_user')||'{}'); u.avatar = g; localStorage.setItem('revel_user', JSON.stringify(u)); } catch(e){}
+}
+function renderAvatarThumb(){
+  const el = document.getElementById('avatar-thumb');
+  if (!el) return;
+  if (!S.avatarGender) { el.style.display='none'; return; }
+  el.style.display='';
+  el.innerHTML = `<img src="${imgUrl(currentAvatarImg())}" alt="" onerror="this.src='${imgUrl(baseAvatar())}'">`;
+}
+const fallbackGift = `onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'av-gift-fallback',textContent:'🎁'}))"`;
+function avatarImgTag(name, cls, fallbackName){
+  return `<img class="${cls}" src="${imgUrl(name)}" alt="" onerror="this.onerror=null;this.src='${imgUrl(fallbackName||baseAvatar())}'">`;
+}
+function closeAvatarLayer(){ document.getElementById('avatar-layer').innerHTML = ''; }
+window.closeAvatarLayer = closeAvatarLayer;
+
+// 첫 진입: 이미 조건 충족한 보상은 조용히 획득 처리 (모달 없이 기준선)
+let avatarBooted = false;
+function bootAvatar(){
+  if (avatarBooted) return; avatarBooted = true;
+  loadAvatarState();
+  if (S.avatarGender) {
+    AVATAR_ITEMS.forEach(it => { if (it.cond()) S.avatarUnlocked.add(it.id); });
+    saveAvatarState();
+    renderAvatarThumb();
+  } else {
+    renderAvatarThumb();
+    showGenderPicker();
+  }
+}
+// 새로 충족된 보상 감지 → 큐에 넣고 순서대로 표시
+function checkMilestones(){
+  if (!S.avatarGender || !avatarBooted) return;
+  AVATAR_ITEMS.forEach(it => {
+    if (!S.avatarUnlocked.has(it.id) && it.cond() && !S.giftQueue.includes(it.id)) S.giftQueue.push(it.id);
+  });
+  if (!S.giftModalOpen) showNextGift();
+}
+function showNextGift(){
+  if (S.giftQueue.length === 0) return;
+  const it = AVATAR_ITEMS.find(x => x.id === S.giftQueue[0]);
+  if (!it) { S.giftQueue.shift(); return; }
+  if (it.finale) showCrownFinale(it); else showGiftModal(it);
+}
+
+window.showGenderPicker = function(){
+  const layer = document.getElementById('avatar-layer');
+  layer.innerHTML = `
+    <div class="av-overlay">
+      <div class="av-card">
+        <div class="av-announce">나의 캐릭터를 선택하세요 🙂</div>
+        <div class="av-pick-row">
+          <button class="av-pick" data-g="boy">${avatarImgTag('boy.png','','boy.png')}<div>남자</div></button>
+          <button class="av-pick" data-g="girl">${avatarImgTag('girl.png','','girl.png')}<div>여자</div></button>
+        </div>
+      </div>
+    </div>`;
+  layer.querySelectorAll('.av-pick').forEach(b => b.onclick = () => {
+    setGender(b.dataset.g);
+    closeAvatarLayer();
+    AVATAR_ITEMS.forEach(it => { if (it.cond()) S.avatarUnlocked.add(it.id); });
+    saveAvatarState();
+    renderAvatarThumb();
+  });
+};
+
+function showGiftModal(it){
+  S.giftModalOpen = true;
+  const layer = document.getElementById('avatar-layer');
+  layer.innerHTML = `
+    <div class="av-overlay">
+      <div class="av-card">
+        <div class="av-announce">${it.announce}</div>
+        <img class="av-gift" src="${imgUrl(it.gift)}" alt="" ${fallbackGift}>
+        <button class="av-btn" id="av-receive">받기 🎁</button>
+      </div>
+    </div>`;
+  document.getElementById('av-receive').onclick = () => {
+    S.avatarUnlocked.add(it.id);
+    saveAvatarState();
+    renderAvatarThumb();
+    layer.innerHTML = `
+      <div class="av-overlay">
+        <div class="av-card">
+          <div class="av-announce">${it.label} 획득! ✨</div>
+          ${avatarImgTag(currentAvatarImg(),'av-char big')}
+          <div class="av-item-name">멋진 제사장님이 되어가요</div>
+          <button class="av-btn gold" id="av-ok">좋아요!</button>
+        </div>
+      </div>`;
+    document.getElementById('av-ok').onclick = () => {
+      S.giftQueue.shift();
+      closeAvatarLayer();
+      S.giftModalOpen = false;
+      showNextGift();
+    };
+  };
+}
+
+function showCrownFinale(it){
+  S.giftModalOpen = true;
+  S.avatarUnlocked.add(it.id);
+  saveAvatarState();
+  const beforeImg = currentAvatarImg('crown'); // 면류관 제외한 현재 모습
+  const layer = document.getElementById('avatar-layer');
+  layer.innerHTML = `
+    <div class="av-overlay finale">
+      <div class="av-fanfare">🎉 🎺 🎉</div>
+      <div class="av-finale-stage">
+        ${avatarImgTag(beforeImg,'av-char')}
+        <img class="av-crown-drop" src="${imgUrl('crown.png')}" alt="" onerror="this.style.display='none'">
+      </div>
+    </div>`;
+  setTimeout(() => {
+    const ov = layer.querySelector('.av-overlay');
+    if (!ov) return;
+    ov.insertAdjacentHTML('beforeend', `
+      <div class="av-card pop">
+        <div class="av-announce">${it.announce}</div>
+        <button class="av-btn gold" id="av-crown-ok">확인 👑</button>
+      </div>`);
+    document.getElementById('av-crown-ok').onclick = () => {
+      renderAvatarThumb();
+      layer.innerHTML = `
+        <div class="av-overlay">
+          <div class="av-card">
+            <div class="av-announce">👑 면류관을 쓴 제사장님!</div>
+            ${avatarImgTag(currentAvatarImg(),'av-char big', beforeImg)}
+            <button class="av-btn gold" id="av-crown-done">완료</button>
+          </div>
+        </div>`;
+      document.getElementById('av-crown-done').onclick = () => {
+        S.giftQueue.shift();
+        closeAvatarLayer();
+        S.giftModalOpen = false;
+      };
+    };
+  }, 2500);
+}
+
+window.openCharacter = function(){
+  if (!S.avatarGender) { showGenderPicker(); return; }
+  const layer = document.getElementById('avatar-layer');
+  const itemsHtml = AVATAR_ITEMS.map(it => {
+    const got = S.avatarUnlocked.has(it.id);
+    return `<div class="av-li ${got?'got':''}">
+      <span class="av-li-name">${got?'✅':'🔒'} ${it.label}</span>
+      <span class="av-li-need">${got?'획득 완료':it.need}</span>
+    </div>`;
+  }).join('');
+  layer.innerHTML = `
+    <div class="av-overlay" onclick="if(event.target===this)closeAvatarLayer()">
+      <div class="av-card">
+        <div class="av-head"><span>👤 내 캐릭터</span><button class="settings-x" onclick="closeAvatarLayer()">✕</button></div>
+        ${avatarImgTag(currentAvatarImg(),'av-char big')}
+        <div class="av-list">${itemsHtml}</div>
+      </div>
+    </div>`;
+};
+
 /* Firebase 점수 로드 */
 async function loadScores() {
   if (S.user.isGuest) { renderAll(); return; }
@@ -1121,9 +1382,11 @@ async function loadScores() {
 loadScores();
 
 async function saveScore(verseId, data) {
+  // 메모리에는 항상 반영 (게스트 포함) — 보상 감지에 사용
+  S.scores[verseId] = {...(S.scores[verseId]||{}), ...data};
+  try { checkMilestones(); } catch(e){}
   if (!S.user || S.user.isGuest) return;
   try {
-    S.scores[verseId] = {...(S.scores[verseId]||{}), ...data};
     await setDoc(doc(db,'scores',S.user.uid), {[verseId]: {...S.scores[verseId], updatedAt:serverTimestamp()}}, {merge:true});
     if (data.mastered) {
       await setDoc(doc(db,'leaderboard',S.user.uid), {
@@ -1160,6 +1423,7 @@ function renderAll() {
   updateHeader();
   updateStats();
   renderStage();
+  bootAvatar();
 }
 
 function renderVerseTabs() {
