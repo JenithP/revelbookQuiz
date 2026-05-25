@@ -16,6 +16,7 @@
   --text:#f0ece0;--text-dim:#9e96b8;--text-muted:#5a5275;
   --card-bg:#13102a;--card-border:rgba(255,255,255,.07);
   --success:#4dbda8;--error:#e07070;
+  --fs:1; /* 글자 크기 배율 (설정 탭, 1~4단계) */
 }
 html,body{height:100%;overflow:hidden}
 body{
@@ -531,6 +532,44 @@ body{
 
 /* 스페이서 */
 .spacer{height:14px}
+
+/* ===== 글자 크기 배율 (설정 탭) — 본문 텍스트 스케일 ===== */
+.scene-chunk,.verse-hint-line,.verse-lined{font-size:calc(15px*var(--fs,1))}
+.s2-verse-text,.bubble-input,.verse-line,.bubble-verse-box,.chunk-blank-input,.blank-input{font-size:calc(14px*var(--fs,1))}
+.verse-done-text,.full-verse-text{font-size:calc(13px*var(--fs,1))}
+
+/* ===== 설정 (⚙) ===== */
+.header-gear{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--card-border);border-radius:8px;background:none;
+  color:var(--text-dim);font-size:16px;cursor:pointer;flex-shrink:0;padding:0;
+}
+.header-gear:hover{color:var(--gold-light);border-color:var(--gold)}
+.settings-overlay{
+  position:fixed;inset:0;z-index:2000;max-width:420px;margin:0 auto;
+  background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;
+}
+.settings-overlay.open{display:flex}
+.settings-panel{
+  background:var(--deep2);border:1px solid var(--card-border);border-radius:16px;
+  padding:20px;width:calc(100% - 48px);max-width:340px;
+  box-shadow:0 12px 40px rgba(0,0,0,.55);
+}
+.settings-head{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:16px;font-weight:700;color:var(--gold-light);margin-bottom:18px;
+}
+.settings-x{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;padding:0}
+.settings-label{font-size:13px;color:var(--text-dim);margin-bottom:8px}
+.fs-row{display:flex;gap:8px;margin-bottom:18px}
+.fs-btn{
+  flex:1;padding:12px 0;border-radius:10px;border:1px solid var(--card-border);
+  background:var(--card-bg);color:var(--text-dim);font-size:15px;font-weight:600;
+  cursor:pointer;transition:.2s;
+}
+.fs-btn.active{background:var(--purple);border-color:var(--purple-bright);color:#fff}
+.fs-preview-label{font-size:11px;color:var(--text-muted);margin-bottom:6px}
+.fs-preview{padding:12px 14px;background:var(--deep3);border-radius:10px;line-height:2;color:var(--text);font-size:calc(15px*var(--fs,1))}
 </style>
 </head>
 <body>
@@ -548,6 +587,7 @@ body{
     <div class="dot"></div>
     <div class="dot"></div>
   </div>
+  <button class="header-gear" id="header-gear" onclick="openSettings()" title="설정">⚙</button>
 </div>
 
 <div class="stat-bar">
@@ -577,6 +617,24 @@ body{
   <button class="btn-prev" id="btn-prev" onclick="onPrev()">◀ 이전 듣기</button>
   <button class="btn-replay" id="btn-replay" onclick="onReplay()">🔊 다시 듣기</button>
   <button class="btn-main" id="btn-main" onclick="onMain()">확인</button>
+</div>
+
+<div class="settings-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-panel">
+    <div class="settings-head">
+      <span>⚙ 설정</span>
+      <button class="settings-x" onclick="closeSettings()" title="닫기">✕</button>
+    </div>
+    <div class="settings-label">글자 크기 (1 → 4)</div>
+    <div class="fs-row" id="fs-row">
+      <button class="fs-btn" onclick="setFontLevel(1)">1</button>
+      <button class="fs-btn" onclick="setFontLevel(2)">2</button>
+      <button class="fs-btn" onclick="setFontLevel(3)">3</button>
+      <button class="fs-btn" onclick="setFontLevel(4)">4</button>
+    </div>
+    <div class="fs-preview-label">미리보기</div>
+    <div class="fs-preview">예수 그리스도의 계시라</div>
+  </div>
 </div>
 
 <script type="module">
@@ -1015,7 +1073,9 @@ let S = {
   mastered: new Set(),
   stageUnlocked: [true, true, false, false, false],
   scores: {},
-  user: null
+  user: null,
+  // 설정
+  fontLevel: 1
 };
 
 /* 사용자 */
@@ -1028,6 +1088,23 @@ function defaultUnlocked() {
   return [true, true, true, true, true];
 }
 S.stageUnlocked = defaultUnlocked();
+
+/* ═══════════════════════════════════════
+   설정 — 글자 크기 (1~4단계)
+═══════════════════════════════════════ */
+const FS_MULT = { 1: 1, 2: 1.3, 3: 1.6, 4: 2.0 };
+function setFontLevel(level) {
+  level = Math.min(4, Math.max(1, parseInt(level, 10) || 1));
+  S.fontLevel = level;
+  document.documentElement.style.setProperty('--fs', FS_MULT[level]);
+  document.querySelectorAll('.fs-btn').forEach((b, i) => b.classList.toggle('active', i + 1 === level));
+  localStorage.setItem('revel_fontLevel', String(level));
+}
+window.setFontLevel = setFontLevel;
+window.openSettings = () => document.getElementById('settings-overlay').classList.add('open');
+window.closeSettings = () => document.getElementById('settings-overlay').classList.remove('open');
+// 저장된 글자 크기 적용 (없으면 1단계)
+setFontLevel(parseInt(localStorage.getItem('revel_fontLevel'), 10) || 1);
 
 /* Firebase 점수 로드 */
 async function loadScores() {
@@ -1253,7 +1330,7 @@ function renderStage1(area) {
     <div class="scene-stage" id="scene-stage"></div>
     <div class="card" style="margin-top:10px">
       <div class="card-label">전체 구절</div>
-      <div style="font-size:13px;line-height:2;color:var(--text-dim)">${allText}</div>
+      <div style="font-size:calc(13px*var(--fs,1));line-height:2;color:var(--text-dim)">${allText}</div>
     </div>
     <div class="progress-info">
       ${S.chunkIdx+1} / ${v.chunks.length}
@@ -1642,9 +1719,9 @@ function renderStage3(area) {
           `autocomplete="off" autocorrect="off" spellcheck="false">` +
         `</span>`;
       }).join(' ');
-      return `<div style="margin:8px 0;padding:10px 12px;background:var(--deep3);border-radius:10px;line-height:2.4;font-size:14px">${wordsHtml}</div>`;
+      return `<div style="margin:8px 0;padding:10px 12px;background:var(--deep3);border-radius:10px;line-height:2.4;font-size:calc(14px*var(--fs,1))">${wordsHtml}</div>`;
     }
-    return `<div style="font-size:13px;color:var(--text-muted);padding:5px 4px;line-height:1.7;border-left:2px solid var(--deep3);padding-left:10px;margin:4px 0">${ch.text}</div>`;
+    return `<div style="font-size:calc(13px*var(--fs,1));color:var(--text-muted);padding:5px 4px;line-height:1.7;border-left:2px solid var(--deep3);padding-left:10px;margin:4px 0">${ch.text}</div>`;
   }).join('') : '';
 
   const guideHtml = S.s3_hintPhase
