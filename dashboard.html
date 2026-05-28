@@ -8,12 +8,12 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --gold:#c9a84c;--gold-light:#e8cc80;
-  --deep:#0d0a1a;--deep2:#130f24;--deep3:#1c1535;
-  --purple:#4a3b8c;--purple-light:#7b6abf;--purple-bright:#9d8fe0;
-  --teal:#2a8c7a;--teal-light:#4dbda8;
-  --text:#f0ece0;--text-dim:#9e96b8;--text-muted:#5a5275;
-  --card-bg:#13102a;--card-border:rgba(255,255,255,.07);
+  --gold:#c9a84c;--gold-light:#8a6a22;
+  --deep:#f6f2e6;--deep2:#fffdf6;--deep3:#ece5d1;
+  --purple:#5d4cb8;--purple-light:#7b6abf;--purple-bright:#4a3b8c;
+  --teal:#2a8c7a;--teal-light:#1f6d5e;
+  --text:#1f1a35;--text-dim:#5a5275;--text-muted:#8e87a8;
+  --card-bg:#ffffff;--card-border:rgba(30,20,60,.10);
 }
 html,body{height:100%}
 body{
@@ -37,9 +37,10 @@ body{
 
 /* 프로필 카드 */
 .profile-card{
-  background:linear-gradient(135deg,#1c1535,#0f1a38);
+  background:linear-gradient(135deg,#fffdf6,#f3ecda);
   border:1px solid var(--card-border);border-radius:16px;
   padding:20px;display:flex;align-items:center;gap:14px;
+  box-shadow:0 2px 8px rgba(30,20,60,.04);
 }
 .avatar{
   width:52px;height:52px;border-radius:14px;flex-shrink:0;
@@ -78,8 +79,8 @@ body{
   flex-shrink:0;padding:3px 8px;border-radius:20px;
   font-size:11px;font-weight:500;
 }
-.badge.mastered{background:rgba(45,140,120,.2);color:var(--teal-light);border:1px solid rgba(45,140,120,.3)}
-.badge.inprog{background:rgba(74,59,140,.2);color:var(--purple-bright);border:1px solid rgba(74,59,140,.3)}
+.badge.mastered{background:rgba(45,140,120,.15);color:var(--teal-light);border:1px solid rgba(45,140,120,.4)}
+.badge.inprog{background:rgba(93,76,184,.12);color:var(--purple-bright);border:1px solid rgba(93,76,184,.35)}
 .badge.none{background:var(--deep3);color:var(--text-muted)}
 
 /* 리더보드 */
@@ -88,18 +89,18 @@ body{
   border-radius:12px;overflow:hidden;
 }
 .rank-header{
-  background:linear-gradient(135deg,#1c1535,#13102a);
+  background:linear-gradient(135deg,#f3ecda,#ece5d1);
   padding:12px 14px;display:flex;align-items:center;gap:8px;
   border-bottom:1px solid var(--card-border);
 }
 .rank-header span{font-size:13px;font-weight:600}
 .rank-row{
   display:flex;align-items:center;gap:10px;
-  padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);
+  padding:10px 14px;border-bottom:1px solid rgba(30,20,60,.06);
   transition:.2s;
 }
 .rank-row:last-child{border-bottom:none}
-.rank-row.me{background:rgba(74,59,140,.1);border-left:3px solid var(--purple-bright)}
+.rank-row.me{background:rgba(93,76,184,.08);border-left:3px solid var(--purple-bright)}
 .rank-num{
   width:24px;text-align:center;font-size:13px;font-weight:600;
   color:var(--text-muted);flex-shrink:0;

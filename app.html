@@ -2,20 +2,20 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>말씀 암기 훈련</title>
 <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Pretendard:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --gold:#c9a84c;--gold-light:#e8cc80;
-  --deep:#0d0a1a;--deep2:#130f24;--deep3:#1c1535;
-  --purple:#4a3b8c;--purple-light:#7b6abf;--purple-bright:#9d8fe0;
-  --teal:#2a8c7a;--teal-light:#4dbda8;
-  --amber:#c97d2a;--amber-light:#e8a84c;
-  --text:#f0ece0;--text-dim:#9e96b8;--text-muted:#5a5275;
-  --card-bg:#13102a;--card-border:rgba(255,255,255,.07);
-  --success:#4dbda8;--error:#e07070;
+  --gold:#c9a84c;--gold-light:#8a6a22;
+  --deep:#f6f2e6;--deep2:#fffdf6;--deep3:#ece5d1;
+  --purple:#5d4cb8;--purple-light:#7b6abf;--purple-bright:#4a3b8c;
+  --teal:#2a8c7a;--teal-light:#1f6d5e;
+  --amber:#c97d2a;--amber-light:#a86417;
+  --text:#1f1a35;--text-dim:#5a5275;--text-muted:#8e87a8;
+  --card-bg:#ffffff;--card-border:rgba(30,20,60,.10);
+  --success:#2a8c7a;--error:#c64242;
   --fs:1; /* 글자 크기 배율 (설정 탭, 1~4단계) */
 }
 html,body{height:100%;overflow:hidden}
@@ -24,7 +24,7 @@ body{
   background:var(--deep);color:var(--text);
   display:flex;flex-direction:column;
   max-width:420px;margin:0 auto;
-  height:100vh;position:relative;
+  height:100vh;height:100dvh;position:relative;
 }
 
 /* 헤더 */
@@ -109,7 +109,7 @@ body{
 .emoji-icon{
   width:52px;height:52px;border-radius:12px;font-size:26px;
   display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  background:var(--deep3);border:1px solid var(--card-border);
   transition:.3s;
 }
 .emoji-item.active .emoji-icon{
@@ -173,7 +173,7 @@ body{
 .mini-emoji{
   width:26px;height:26px;font-size:14px;border-radius:6px;
   display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  background:var(--deep3);border:1px solid var(--card-border);
   transition:.3s;
 }
 .mini-emoji.blinking{animation:blink 1s ease-in-out infinite}
@@ -219,16 +219,16 @@ body{
 .verse-lined.wrong{animation:shake .3s ease}
 .verse-answer-show{
   font-size:13px;line-height:1.8;color:var(--text-dim);
-  background:rgba(0,0,0,.2);border-radius:8px;padding:8px 10px;margin-top:6px;
+  background:rgba(30,20,60,.06);border-radius:8px;padding:8px 10px;margin-top:6px;
   display:none;
 }
 
 /* 5단계 전체 타이핑 */
 .full-verse-block{margin-bottom:10px}
-.full-vnum{font-size:12px;font-weight:600;color:var(--gold);margin-bottom:4px}
+.full-vnum{font-size:12px;font-weight:600;color:var(--gold-light);margin-bottom:4px}
 .full-verse-text{
   font-size:13px;color:var(--text-dim);line-height:1.8;
-  background:rgba(0,0,0,.2);border-radius:8px;padding:8px 10px;
+  background:rgba(30,20,60,.06);border-radius:8px;padding:8px 10px;
   margin-bottom:6px;
 }
 .full-input{
@@ -250,6 +250,48 @@ body{
 .feedback.correct{background:rgba(45,140,120,.15);border:1px solid rgba(45,140,120,.3);color:var(--teal-light)}
 .feedback.partial{background:rgba(200,125,42,.15);border:1px solid rgba(200,125,42,.3);color:var(--amber-light)}
 .feedback.wrong{background:rgba(200,100,100,.12);border:1px solid rgba(200,100,100,.25);color:var(--error)}
+
+/* 오답 → 정답 힌트 (2·3단계 버블 아래) */
+.bubble-answer-hint{
+  position:absolute;top:100%;left:50%;
+  transform:translateX(-50%);
+  margin-top:3px;
+  font-size:11px;color:var(--success);
+  font-weight:700;letter-spacing:.2px;
+  white-space:nowrap;pointer-events:none;
+  background:var(--card-bg);
+  padding:2px 7px;border-radius:6px;
+  border:1px solid rgba(45,140,120,.45);
+  z-index:5;
+  box-shadow:0 2px 6px rgba(0,0,0,.06);
+}
+.word-bubble{position:relative}
+
+/* 정답 노출 박스 (4·5단계 textarea 아래) */
+.diff-reveal{
+  margin:10px 14px 0;padding:12px 14px;
+  background:rgba(45,140,120,.08);
+  border:1px solid rgba(45,140,120,.35);
+  border-radius:10px;
+  font-size:14px;line-height:1.9;
+}
+.diff-reveal-label{
+  font-size:11px;color:var(--text-muted);
+  margin-bottom:4px;font-weight:600;letter-spacing:.3px;
+}
+.diff-reveal-text{
+  font-size:calc(14px*var(--fs,1));line-height:1.9;
+  color:var(--text);word-break:keep-all;
+}
+.diff-ok{color:var(--success)}
+.diff-bad{
+  color:#fff;background:var(--error);
+  padding:0 4px;border-radius:4px;font-weight:700;
+}
+.diff-missing{
+  color:var(--text-muted);opacity:.45;
+  text-decoration:underline;text-decoration-color:var(--text-muted);
+}
 
 /* 진행 표시 */
 .progress-info{
@@ -280,7 +322,8 @@ body{
 /* 하단 버튼 */
 .bottom-nav{
   background:var(--deep2);border-top:1px solid var(--card-border);
-  padding:10px 14px;display:flex;gap:8px;flex-shrink:0;
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  display:flex;gap:8px;flex-shrink:0;
 }
 .btn-prev{
   flex:1;padding:11px;border-radius:10px;
@@ -292,8 +335,8 @@ body{
 .btn-replay{
   flex:1;padding:11px;border-radius:10px;
   background:rgba(201,168,76,0.15);
-  border:1px solid rgba(201,168,76,0.4);
-  color:#C9A84C;font-size:13px;cursor:pointer;
+  border:1px solid rgba(201,168,76,0.55);
+  color:var(--gold-light);font-size:13px;cursor:pointer;font-weight:600;
   font-family:'Pretendard',sans-serif;transition:.2s;
 }
 .btn-replay:hover{background:rgba(201,168,76,0.25)}
@@ -350,12 +393,12 @@ body{
 .scene-fallback.fade{opacity:0;transition:opacity 0.2s ease}
 .scene-chunk{
   position:relative;z-index:1;
-  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);
   border-radius:10px;padding:12px 16px;text-align:center;
-  font-size:15px;line-height:1.8;color:var(--text);margin-top:14px;
+  font-size:15px;line-height:1.8;color:#f0ece0;margin-top:14px;
   max-width:340px;width:100%;
 }
-.scene-note{font-size:11px;color:var(--text-muted);margin-top:6px}
+.scene-note{font-size:11px;color:rgba(255,255,255,.7);margin-top:6px}
 
 /* 1단계 — PNG 레이어 씬 */
 .scene-stage{
@@ -485,7 +528,7 @@ body{
   border-bottom:none;
 }
 .s2-vnum{
-  font-size:12px;font-weight:600;color:var(--gold);
+  font-size:12px;font-weight:600;color:var(--gold-light);
   margin-bottom:6px;
 }
 .s2-verse-text{
@@ -503,11 +546,11 @@ body{
 /* 복습 배너 */
 .review-banner{
   position:fixed;top:50%;left:50%;
-  font-size:32px;font-weight:700;color:var(--gold-light);
-  background:rgba(13,10,26,0.95);
-  border:2px solid var(--gold);border-radius:20px;
+  font-size:32px;font-weight:700;color:#fff8e0;
+  background:linear-gradient(135deg,#b8932f 0%,#8a6a22 100%);
+  border:2px solid #8a6a22;border-radius:20px;
   padding:20px 40px;z-index:1000;pointer-events:none;
-  box-shadow:0 8px 32px rgba(201,168,76,0.4);
+  box-shadow:0 8px 32px rgba(184,147,47,0.45);
   animation:bannerPop 1s ease forwards;
 }
 @keyframes bannerPop{
@@ -1478,6 +1521,54 @@ function normalize(s) { return s.trim().replace(/\s+/g,' '); }
 // 띄어쓰기 무시 비교용 — 모든 공백 제거 (글자만 맞으면 정답)
 function normalizeNoSpace(s) { return s.replace(/\s+/g,''); }
 
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+}
+// 정답(공백 포함)을 한 글자씩 표시하면서 사용자 입력과 비교
+// 맞은 글자=초록, 틀린 글자=빨강 배경, 안 친 글자=흐리게
+function diffAnswerVsAttempt(answer, attempt) {
+  const aRaw = answer || '';
+  const uNorm = (attempt || '').replace(/\s+/g,'');
+  let ai = 0;
+  const out = [];
+  for (const ch of aRaw) {
+    if (/\s/.test(ch)) { out.push(ch); continue; }
+    const uc = uNorm[ai];
+    if (uc == null) out.push(`<span class="diff-missing">${escapeHtml(ch)}</span>`);
+    else if (uc === ch) out.push(`<span class="diff-ok">${escapeHtml(ch)}</span>`);
+    else out.push(`<span class="diff-bad">${escapeHtml(ch)}</span>`);
+    ai++;
+  }
+  return out.join('');
+}
+function showAnswerDiff(targetEl, answer, attempt) {
+  removeAnswerDiff();
+  const box = document.createElement('div');
+  box.className = 'diff-reveal';
+  box.id = 'diff-reveal';
+  box.innerHTML =
+    `<div class="diff-reveal-label">📖 정답 (빨간 글자가 틀렸어요)</div>
+     <div class="diff-reveal-text">${diffAnswerVsAttempt(answer, attempt)}</div>`;
+  if (targetEl && targetEl.parentNode) {
+    targetEl.parentNode.insertBefore(box, targetEl.nextSibling);
+  } else {
+    document.getElementById('scroll-area').appendChild(box);
+  }
+}
+function removeAnswerDiff() {
+  document.getElementById('diff-reveal')?.remove();
+}
+function addBubbleAnswerHint(bubble, answer) {
+  if (!bubble || bubble.querySelector('.bubble-answer-hint')) return;
+  const hint = document.createElement('span');
+  hint.className = 'bubble-answer-hint';
+  hint.textContent = answer;
+  bubble.appendChild(hint);
+}
+function removeBubbleAnswerHint(bubble) {
+  bubble?.querySelector('.bubble-answer-hint')?.remove();
+}
+
 /* ═══════════════════════════════════════
    공통 UI 렌더
 ═══════════════════════════════════════ */
@@ -1919,10 +2010,11 @@ function setupS2InputHandlers() {
       const bubble = input.closest('.word-bubble');
       const val = normalize(input.value);
       const expected = expectedOf(input);
-      // 다시 타이핑 시작 → wrong 표시 제거
+      // 다시 타이핑 시작 → wrong 표시 + 정답 힌트 제거
       if (input.classList.contains('wrong')) {
         input.classList.remove('wrong');
         bubble?.classList.remove('wrong');
+        removeBubbleAnswerHint(bubble);
       }
       // 정확히 일치 → 즉시 정답 처리 + 다음 빈칸으로 자동 이동
       // (자동 라운드 완료는 하지 않음 — 사용자가 [확인] 을 눌러야 함)
@@ -1930,6 +2022,7 @@ function setupS2InputHandlers() {
         input.classList.add('correct');
         input.disabled = true;
         bubble?.classList.add('correct');
+        removeBubbleAnswerHint(bubble);
         const next = inputs.slice(i + 1).find(n => !n.disabled);
         next?.focus();
       }
@@ -1940,8 +2033,10 @@ function setupS2InputHandlers() {
       if (input.disabled) return;
       const val = normalize(input.value);
       if (val && val !== expectedOf(input)) {
+        const bubble = input.closest('.word-bubble');
         input.classList.add('wrong');
-        input.closest('.word-bubble')?.classList.add('wrong');
+        bubble?.classList.add('wrong');
+        addBubbleAnswerHint(bubble, expectedOf(input));
       }
     });
 
@@ -2006,12 +2101,14 @@ function checkStage2() {
       input.disabled = true;
       bubble?.classList.remove('wrong');
       bubble?.classList.add('correct');
+      removeBubbleAnswerHint(bubble);
       newlyCorrect++;
     } else {
       allCorrect = false;
       input.classList.add('wrong');
       bubble?.classList.add('wrong');
-      // 사용자가 다시 입력하면 'input' 이벤트로 wrong 클래스 제거됨 (값은 유지)
+      addBubbleAnswerHint(bubble, answer);
+      // 사용자가 다시 입력하면 'input' 이벤트로 wrong 클래스 + 힌트 제거됨 (값은 유지)
     }
   });
 
@@ -2173,12 +2270,14 @@ function setupS3InputHandlers() {
       if (input.classList.contains('wrong')) {
         input.classList.remove('wrong');
         bubble?.classList.remove('wrong');
+        removeBubbleAnswerHint(bubble);
       }
       // (자동 진행 안 함 — 사용자가 [확인] 을 눌러야 다음 청크로)
       if (val === expected) {
         input.classList.add('correct');
         input.disabled = true;
         bubble?.classList.add('correct');
+        removeBubbleAnswerHint(bubble);
         const next = inputs.slice(i + 1).find(n => !n.disabled);
         next?.focus();
       }
@@ -2188,8 +2287,10 @@ function setupS3InputHandlers() {
       if (input.disabled) return;
       const val = normalize(input.value);
       if (val && val !== expectedOf(input)) {
+        const bubble = input.closest('.word-bubble');
         input.classList.add('wrong');
-        input.closest('.word-bubble')?.classList.add('wrong');
+        bubble?.classList.add('wrong');
+        addBubbleAnswerHint(bubble, expectedOf(input));
       }
     });
   });
@@ -2247,10 +2348,12 @@ function checkStage3() {
       input.disabled = true;
       bubble?.classList.remove('wrong');
       bubble?.classList.add('correct');
+      removeBubbleAnswerHint(bubble);
     } else {
       allCorrect = false;
       input.classList.add('wrong');
       bubble?.classList.add('wrong');
+      addBubbleAnswerHint(bubble, answer);
     }
   });
 
@@ -2334,6 +2437,7 @@ function setupS4InputHandlers() {
   ta.addEventListener('input', () => {
     autoResize(ta);
     ta.classList.remove('wrong');
+    removeAnswerDiff();
   });
   ta.focus();
 }
@@ -2388,6 +2492,7 @@ function checkStage4() {
     ta.classList.remove('wrong');
     ta.classList.add('correct');
     ta.disabled = true;
+    removeAnswerDiff();
     S.s4_done.add(gi);
     S.stageCorrect++; S.streak++;
     updateStats();
@@ -2405,8 +2510,10 @@ function checkStage4() {
     S.streak = 0;
     updateStats();
     ta.classList.add('wrong');
-    showFeedback('wrong','✗ 다시 확인하세요 — 글자가 정확히 일치해야 합니다');
-    setTimeout(() => { ta.focus(); hideFeedback(); }, 1300);
+    const rawAnswer = groups[gi].chunks.map(ch=>ch.text).join(' ');
+    showAnswerDiff(ta, rawAnswer, ta.value);
+    showFeedback('wrong','✗ 빨간 글자가 틀렸어요. 다시 입력하면 사라집니다');
+    setTimeout(() => { hideFeedback(); }, 2000);
   }
 }
 
@@ -2462,7 +2569,11 @@ function setupS5InputHandlers() {
   const ta = document.getElementById('s5-textarea');
   if (!ta) return;
   autoResize(ta);
-  ta.addEventListener('input', () => { autoResize(ta); ta.classList.remove('wrong'); });
+  ta.addEventListener('input', () => {
+    autoResize(ta);
+    ta.classList.remove('wrong');
+    removeAnswerDiff();
+  });
   ta.focus();
 }
 
@@ -2508,6 +2619,7 @@ function checkStage5() {
     ta.classList.remove('wrong');
     ta.classList.add('correct');
     ta.disabled = true;
+    removeAnswerDiff();
     S.stageCorrect++; S.streak++;
     S.mastered.add(v.id);
     updateStats();
@@ -2518,8 +2630,10 @@ function checkStage5() {
     S.streak = 0;
     updateStats();
     ta.classList.add('wrong');
-    showFeedback('wrong','✗ 다시 확인하세요 — 글자가 정확히 일치해야 합니다');
-    setTimeout(() => { ta.focus(); hideFeedback(); }, 1400);
+    const rawAnswer = v.chunks.map(ch=>ch.text).join(' ');
+    showAnswerDiff(ta, rawAnswer, ta.value);
+    showFeedback('wrong','✗ 빨간 글자가 틀렸어요. 다시 입력하면 사라집니다');
+    setTimeout(() => { hideFeedback(); }, 2000);
   }
 }
 
