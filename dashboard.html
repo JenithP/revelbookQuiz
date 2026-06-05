@@ -177,7 +177,7 @@ window.loadAll = async function() {
   try {
     const [scoreSnap, lbSnap] = await Promise.all([
       getDoc(doc(db,'scores',user.uid)),
-      getDocs(query(collection(db,'leaderboard'), orderBy('totalMastered','desc'), orderBy('accuracy','desc'), limit(50)))
+      getDocs(query(collection(db,'leaderboard'), orderBy('totalMastered','desc'), limit(50)))
     ]);
 
     const scores = scoreSnap.exists() ? scoreSnap.data() : {};
@@ -189,6 +189,8 @@ window.loadAll = async function() {
     // 리더보드
     const lb = [];
     lbSnap.forEach(d => lb.push({uid:d.id,...d.data()}));
+    // totalMastered는 서버 정렬, 동점 시 accuracy로 보조 정렬 (복합 인덱스 불필요)
+    lb.sort((a,b) => (b.totalMastered||0)-(a.totalMastered||0) || (b.accuracy||0)-(a.accuracy||0));
     const myRank = lb.findIndex(r=>r.uid===user.uid) + 1;
 
     // 구절별 진도
