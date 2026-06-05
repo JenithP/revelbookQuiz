@@ -52,6 +52,7 @@ def group_keyboard():
         [InlineKeyboardButton("🧑 청년회", callback_data="grp:청년회"),
          InlineKeyboardButton("💼 자문회", callback_data="grp:자문회")],
         [InlineKeyboardButton("⛪ 교역자", callback_data="grp:교역자")],
+        [InlineKeyboardButton("✍️ 직접 입력하기", callback_data="freeinput")],
     ])
 
 
@@ -286,6 +287,33 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     stage = context.user_data.get("stage")
 
+    # ── 직접 입력: 이름 ──
+    if stage == "reg_free_name":
+        if len(text) > 20 or len(text) < 1:
+            await update.message.reply_text("❗ 이름은 1~20자로 입력해주세요.")
+            return
+        context.user_data["reg_name"] = text
+        context.user_data["stage"] = "reg_free_aff"
+        await update.message.reply_text(
+            f"{text}님, 반가워요! 😊\n\n"
+            f"소속을 한 줄로 입력해주세요.\n"
+            f"(예: 청년회 2부 5구역 / 부녀회 회장단 / 교역자 교육부)"
+        )
+        return
+
+    # ── 직접 입력: 소속 → 저장 ──
+    if stage == "reg_free_aff":
+        if len(text) > 50 or len(text) < 1:
+            await update.message.reply_text("❗ 소속은 1~50자로 입력해주세요.")
+            return
+        context.user_data["reg_group"] = text
+        context.user_data["reg_bu"] = ""
+        context.user_data["reg_team"] = ""
+        context.user_data["reg_gu"] = ""
+        context.user_data["reg_dept"] = ""
+        await save_profile(update, context)
+        return
+
     # ── 등록: 이름 ──
     if stage == "reg_name":
         if len(text) > 20 or len(text) < 1:
@@ -461,6 +489,16 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     action = query.data
+
+    # 직접 입력 모드 (이름 → 소속 통째 입력)
+    if action == "freeinput":
+        context.user_data["stage"] = "reg_free_name"
+        await query.message.reply_text(
+            "✍️ 직접 입력 모드예요.\n\n"
+            "먼저 이름을 알려주세요. 😊\n"
+            "(예: 김강동)"
+        )
+        return
 
     # 소속 선택
     if action.startswith("grp:"):

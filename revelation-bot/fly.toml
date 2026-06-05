@@ -1,0 +1,22 @@
+# Fly.io 배포 설정 - 요한계시록 암기 훈련 봇
+# 핵심: auto_stop_machines = false → 절대 안 잠 (Render 슬립 문제 해결)
+
+app = "revelation-bot"
+primary_region = "nrt"  # 도쿄 (한국에서 가장 가까움)
+
+[build]
+
+[env]
+  PORT = "8080"
+
+# 헬스서버 노출 + 머신을 24시간 켜둠
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false   # ★ 안 재우는 핵심 설정
+  auto_start_machines = true
+  min_machines_running = 1     # ★ 항상 1대는 살아있게
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"             # firebase-admin + ptb 여유있게
