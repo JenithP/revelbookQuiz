@@ -244,20 +244,22 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=webapp_button(user.id, "🚀 훈련 시작하기"),
         )
     else:
-        context.user_data["stage"] = "reg_group"
+        context.user_data["stage"] = "reg_free_name"
         await update.message.reply_text(
             "안녕하세요! 요한계시록 암기 훈련 봇입니다 📖\n"
-            "먼저 소속을 등록해주세요.",
-            reply_markup=group_keyboard(),
+            "먼저 등록을 진행할게요.\n\n"
+            "이름을 알려주세요. 😊\n"
+            "(예: 홍열매)"
         )
 
 
 async def cmd_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
-    context.user_data["stage"] = "reg_group"
+    context.user_data["stage"] = "reg_free_name"
     await update.message.reply_text(
-        "어디 소속이신가요?",
-        reply_markup=group_keyboard(),
+        "정보를 다시 등록할게요.\n\n"
+        "이름을 알려주세요. 😊\n"
+        "(예: 홍열매)"
     )
 
 
@@ -297,7 +299,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"{text}님, 반가워요! 😊\n\n"
             f"소속을 한 줄로 입력해주세요.\n"
-            f"(예: 청년회 2부 5구역 / 부녀회 회장단 / 교역자 교육부)"
+            f"(예: 부녀회 3부 3팀 12구역 / 청년회 2부 5구역 / 교역자 교육부)"
         )
         return
 
