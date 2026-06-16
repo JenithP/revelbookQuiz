@@ -2685,7 +2685,9 @@ function prepareTTS(text) {
   utter.onend=()=>{ S.ttsPlaying=false; document.getElementById('tts-btn').textContent='▶'; document.getElementById('tts-fill').style.width='100%'; };
   utter.onboundary=(e)=>{ if(utter.text) document.getElementById('tts-fill').style.width=Math.round(e.charIndex/utter.text.length*100)+'%'; };
   S.ttsUtter=utter;
-  setTimeout(()=>{ if(S.stageIdx===0) speechSynthesis.speak(utter); },300);
+  // 자동재생 안 함 — 사용자가 ▶ 버튼을 눌러야 재생됨
+  const fill=document.getElementById('tts-fill'); if(fill) fill.style.width='0%';
+  const btn=document.getElementById('tts-btn'); if(btn) btn.textContent='▶';
 }
 window.toggleTTS=function(){
   if(!S.ttsUtter) return;
