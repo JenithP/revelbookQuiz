@@ -1216,24 +1216,25 @@ setFontLevel(parseInt(localStorage.getItem('revel_fontLevel'), 10) || 1);
 const AVATAR_ITEMS = [
   { id:'glove', label:'장갑', gift:'gloves.png', announce:'장갑 선물이 도착했어요! 🧤',
     boy:'boy with glove.png', girl:'girl with glove.png',
-    cond:()=>verseStageDone('rev1',2), need:'계1장 2단계 클리어' },
+    cond:()=>anyStageDone(1), need:'1단계 클리어' },
   { id:'shoes', label:'제사장 구두', gift:'shoes.png', announce:'멋진 제사장 구두가 도착했어요! 👟',
     boy:'boy with glove and shoes.png', girl:'girl with glove and shoes.png',
-    cond:()=>verseStageDone('rev7',2), need:'계7장 2단계 클리어' },
+    cond:()=>anyStageDone(2), need:'2단계 클리어' },
   { id:'shirt', label:'하얀 셔츠', gift:'shirt.png', announce:'하얀 셔츠가 도착했어요! 👔',
     boy:'boy with shirt.png', girl:'girl with shirt.png',
-    cond:()=>allStageDone(2), need:'2단계 전체(5구절) 클리어' },
+    cond:()=>anyStageDone(3), need:'3단계 클리어' },
   { id:'jean', label:'화이트 바지', gift:'jeans.png', announce:'제사장용 화이트 바지가 도착했어요! 👖',
     boy:'boy with jean.png', girl:'girl with jean.png',
-    cond:()=>allStageDone(3), need:'3단계 전체 클리어' },
+    cond:()=>anyStageDone(4), need:'4단계 클리어' },
   { id:'robe', label:'제사장 로브', gift:'robe.png', announce:'멋진 제사장 로브가 도착했어요! 🥼',
     boy:'boy with robe.png', girl:'girl with robe.png',
-    cond:()=>allStageDone(4), need:'4단계 전체 클리어' },
+    cond:()=>anyStageDone(5), need:'5단계 클리어' },
   { id:'crown', label:'면류관', gift:'crown.png', announce:'축하해요!! 제사장님을 위한 멋진 면류관을 받으세요!! 👑',
     boy:'boy with crown.png', girl:'girl with crown.png',
-    cond:()=>allStageDone(5), need:'5단계 전체 클리어', finale:true }
+    cond:()=>allStageDone(5), need:'5개 장 전체 마스터', finale:true }
 ];
 function verseStageDone(id, stage){ return !!S.scores[id]?.['stage'+stage+'done']; }
+function anyStageDone(stage){ return VERSES.some(v => !!S.scores[v.id]?.['stage'+stage+'done']); }
 function allStageDone(stage){ return VERSES.every(v => !!S.scores[v.id]?.['stage'+stage+'done']); }
 function imgUrl(name){ return encodeURI('/images/' + name); }
 function baseAvatar(){ return S.avatarGender==='girl' ? 'girl.png' : 'boy.png'; }
