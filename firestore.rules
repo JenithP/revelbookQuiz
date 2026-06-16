@@ -1,0 +1,48 @@
+rules_version = '2';
+
+// ============================================================
+// RevelQuiz Firestore 보안 규칙 (정규)
+// ------------------------------------------------------------
+// 이 앱은 Firebase Auth를 사용하지 않는다(소속+이름 기반 로그인).
+// 따라서 request.auth 로 "본인 여부"를 검증할 수 없다.
+// → 아래 규칙은 (1) 만료 없는 정규 규칙, (2) 사용하는 3개 컬렉션만 허용,
+//   (3) 삭제 전면 금지, (4) 형식/크기 검증으로 남용을 줄이는 것이 목표다.
+//   "본인만 쓰기" 같은 진짜 잠금이 필요하면 Firebase Auth 도입이 선행돼야 한다.
+// 콘솔: Firestore Database → 규칙 탭에 이 내용을 붙여넣고 게시.
+// ============================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 회원 — 소속+이름으로 조회/로그인하는 공개 모델
+    //  · index.html: get / list / where(group,name) 조회, 가입(create), lastLogin(update)
+    match /users/{uid} {
+      allow read:   if true;
+      allow create: if isValidUser();
+      allow update: if isValidUser();
+      allow delete: if false;
+    }
+
+    // 점수 — scores/{uid} 문서에 구절별 진행도를 merge 저장
+    //  · app.html / dashboard.html: 읽기, setDoc(merge) 쓰기
+    match /scores/{uid} {
+      allow read:  if true;
+      allow write: if request.resource.data.size() <= 30;
+      allow delete: if false;
+    }
+
+    // 순위표 — 전체 읽기(orderBy/limit), 본인 항목 쓰기
+    match /leaderboard/{uid} {
+      allow read:  if true;
+      allow write: if request.resource.data.size() <= 20;
+      allow delete: if false;
+    }
+
+    // 정의되지 않은 그 외 모든 경로는 기본 거부(default deny)
+
+    function isValidUser() {
+      let d = request.resource.data;
+      return d.name is string  && d.name.size()  > 0 && d.name.size()  <= 40
+          && d.group is string && d.group.size() > 0 && d.group.size() <= 40;
+    }
+  }
+}

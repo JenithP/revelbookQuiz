@@ -8,6 +8,7 @@
 
 import os
 import json
+import base64
 import time
 import logging
 import threading
@@ -38,7 +39,14 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # ─────────────── Firebase 초기화 ───────────────
-_key_dict = json.loads(os.environ["FIREBASE_KEY_JSON"])
+# FIREBASE_KEY_JSON 은 원본 JSON 문자열 또는 base64 인코딩 둘 다 허용
+# (PowerShell 등에서 여러 줄 JSON을 그대로 넘기기 어려워 base64 권장)
+_key_raw = os.environ["FIREBASE_KEY_JSON"].strip()
+try:
+    _key_dict = json.loads(_key_raw)
+except json.JSONDecodeError:
+    _key_dict = json.loads(base64.b64decode(_key_raw))
+logging.info(f"Firebase key loaded: project={_key_dict.get('project_id')} key_id={_key_dict.get('private_key_id')}")
 _cred = credentials.Certificate(_key_dict)
 firebase_admin.initialize_app(_cred)
 db = firestore.client()
